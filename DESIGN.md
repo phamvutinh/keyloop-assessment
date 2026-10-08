@@ -1,77 +1,154 @@
-# DESIGN.md — Lead Management CRM Design System
+# DESIGN.md — AI Manager / Real Design System
 
-## 1. Visual Theme & Atmosphere
+## 1. Purpose
 
-The interface is a clear, dependable, practical CRM for sales teams. The dashboard prioritizes quick reading of metrics, lead status, and follow-up activity. A light neutral canvas, white surfaces, and green accents keep the experience organized. Borders and shadows are restrained, separating content without making the interface feel heavy.
+This document defines the shared visual and interaction rules for AI Manager: the Lead Management CRM, standalone 404 page, and utility guideline page.
 
-This is a responsive web app: a sidebar and data table on wide screens, with lead rows reorganized into readable cards on tablets and phones.
+## 2. Visual Theme & Atmosphere
 
-## 2. Color Palette
+AI Manager is a quiet, operational interface for managing leads and follow-up work. It prioritizes scan-friendly hierarchy, calm feedback, and clear action states.
 
-- **Page Background:** `#F0F1F1`.
-- **Content Surface:** `#FFFFFF`.
-- **Sidebar Background:** `#F8F8F8`.
-- **Primary Text:** `#111318`.
-- **Secondary Text:** `#747981`.
-- **Borders:** `#E8E9EB`; stronger border `#D8DADE`.
-- **Primary Action Accent:** green `#08A77C`; darker green for status and links `#087B60`; soft green surface `#E9F7F2`.
-- **Alert / Follow-up Colors:** red `#DE5C60` with `#FFF0EF`; warm alert accent `#D8785F` with `#FFF4EF`.
-- **Qualified Status:** purple `#9B52D4` with `#FBF1FF`.
+Use neutral surfaces and near-black text as the default. Green is a high-signal cue for positive actions, selection, and keyboard focus; use it selectively.
 
-Pair status colors with text labels; never communicate meaning through color alone. The current interface is light mode and does not define a dark-mode token set.
+## 3. Color Palette
 
-## 3. Component Styling
+| Role        | Name        | Hex       | Usage                                             |
+| ----------- | ----------- | --------- | ------------------------------------------------- |
+| background  | Background  | `#f0f1f1` | Outer application canvas and low-emphasis regions |
+| foreground  | Foreground  | `#111318` | Headings, body text, dark primary controls        |
+| accent      | Accent      | `#08a77c` | Focus ring, positive action, selection cue        |
+| surface     | Surface     | `#ffffff` | Cards, inputs, panels, selected navigation        |
+| muted       | Muted       | `#747981` | Metadata, helper text, inactive navigation        |
+| border      | Border      | `#e8e9eb` | Dividers, input outlines, component boundaries    |
+| accent-dark | Accent dark | `#087b60` | Pressed and hover state for positive actions      |
 
-- **Application Frame:** on desktop, use an approximately `258px` sidebar and a flexible content column. The outer frame uses a `22px` radius and a subtle `0 14px 38px rgb(22 25 31 / 5%)` shadow.
-- **Metric and List Surfaces:** white backgrounds, thin neutral borders, and typical `16–18px` corner radii. Keep padding compact and consistent.
-- **Buttons:** standard buttons use a white surface, gray border, and pill shape. Primary buttons use a deep charcoal `#11151B` background with white text.
-- **Search and Filters:** use clearly labeled, lightly bordered fields with small corner radii. The filter panel is anchored to the list toolbar.
-- **Lead Table:** on desktop, rows use subtle separators. Status uses outlined text badges; stage progress uses a gray track with a green fill.
-- **Responsive Lead Cards:** on tablets and phones, each lead becomes a card in this order: name, company, service, status, stage, last contact, and actions.
-- **Contact Actions:** phone, message, and email actions share one icon style. On touch screens, action targets are at least `44 × 44px`.
-- **Icons:** inline SVGs use Heroicons v2 Outline with a consistent stroke. Hide decorative icons from assistive technology when they convey no additional information.
-- **Motion:** use short state transitions and honor `prefers-reduced-motion`.
+Do not introduce additional colors without defining their role and accessibility behavior.
 
 ## 4. Typography
 
-- **Font Family:** Inter with system sans-serif fallbacks.
-- **Body Copy:** `15px` with `1.5` line height; body text uses `14px` on small screens.
-- **Page Headings:** medium-bold, fluid `23–28px`; approximately `24px` on mobile.
-- **Key Metrics:** approximately `28px` on desktop and `25px` on mobile.
-- **Desktop Table:** labels and data use smaller type to fit the table's information density. In responsive cards, lead names and data become larger and may wrap for readability.
-
-Keep type hierarchy consistent. Lead names and company names can be long, so allow them to wrap in mobile cards instead of clipping them.
+- **Display and UI:** Inter, with fallbacks: `ui-sans-serif`, `system-ui`, `-apple-system`, `BlinkMacSystemFont`, `"Segoe UI"`, `sans-serif`.
+- **Headings:** Use strong hierarchy through size and weight rather than decorative styling.
+- **Body text:** Minimum 16px for reading content; use a line height between 1.5 and 1.75.
+- **Labels and metadata:** May use 12–14px when paired with readable contrast and clear hierarchy.
 
 ## 5. Layout Principles
 
-- **Desktop:** application frame capped at `1600px`; sidebar occupies its own column and the main content fills the remaining space. Four metric cards sit above the lead list.
-- **Tablet (up to `1100px`):** sidebar narrows to about `220px`; metrics switch to a two-column grid; lead rows become cards instead of compressing table columns.
-- **Mobile (up to `760px`):** hide the sidebar, use a sticky top bar, and stack content in one column. Lead cards, details, and the footer reflow vertically.
-- **Very Narrow Screens (up to `390px`):** reduce outer spacing and stack the toolbar so search, filters, and pagination remain usable.
-- **Desktop Table:** allow its own horizontal scrolling when available width is insufficient. On tablet and mobile, reorganize table data into cards to avoid page-level horizontal scrolling.
-- **Lead Details:** place lead information and the activity timeline side by side when space allows; stack them on narrow screens.
-- **Spacing Rhythm:** favor multiples of `4px` and `8px`. Use whitespace, alignment, and subtle surfaces to establish hierarchy.
+- Use an 8px spacing rhythm.
+- Use 10px corner radii for controls.
+- Use 16–22px corner radii for grouped surfaces such as cards and panels.
+- Use 1px borders with `#e8e9eb`.
+- Keep primary content in normal document flow with Flexbox or Grid.
+- Use a sidebar on larger screens; switch to compact horizontal navigation on narrow screens.
+- Support responsive layouts at 375px, 768px, 1024px, and 1440px.
+- Avoid horizontal page scrolling on mobile.
 
-## 6. Do's and Don'ts
+## 6. Component Rules
 
-- ✅ Keep the light neutral background, high-contrast text, and green accents for primary actions and progress.
-- ✅ Pair status colors with visible text labels.
-- ✅ Preserve the same lead information order when the table becomes cards.
-- ✅ Let long names, company names, and descriptions wrap on mobile; keep actions easy to identify and reach.
-- ✅ Use Heroicons Outline consistently across interface icons.
-- ❌ Do not apply the WattVision palette or switch to dark mode unless the design direction is explicitly changed.
-- ❌ Do not shrink the whole interface to fit a phone; reorganize content at responsive breakpoints.
-- ❌ Do not clip status labels, lead names, or stage information to save space.
-- ❌ Do not add heavy shadows, decorative gradients, or stacked cards without a clear information-hierarchy purpose.
-- ❌ Do not use an icon without a text label for a primary action.
+### Buttons
 
-## 7. Accessibility and Focus States
+- Use one dark primary button for the highest-priority action in a task area.
+- Primary button: `#111318` background with `#ffffff` text.
+- Primary hover: `#2b3139` background and border with `#ffffff` text, matching the `reference_HTML.html` “New Lead” hover effect.
+- Secondary button: white surface with a border; hover changes surface and border only.
+- Disabled buttons use the background surface and muted text.
+- Buttons must have visible text unless they are icon-only controls.
 
-- **Keyboard Access:** all links, buttons, form controls, lead selection, and row actions must be reachable and operable with a keyboard. Keep focus order aligned with the visual reading order.
-- **Visible Focus:** interactive controls use a clear focus ring. The current implementation uses a `3px` green outline (`rgb(8 167 124 / 36%)`) with a `2px` offset for `:focus-visible`. Preserve a visible indicator against both white surfaces and the page background; do not remove outlines without an equally clear replacement.
-- **Accessible Names:** icon-only buttons need a meaningful accessible name. Inputs and selects need persistent labels; placeholders are not labels.
-- **Status Communication:** keep status text visible alongside color. Progress indicators should expose their meaning and value to assistive technology when implemented as interactive or dynamic progress.
-- **Touch Targets:** keep mobile actions at least `44 × 44px`, with enough separation to prevent accidental activation.
-- **Motion and Zoom:** respect reduced-motion preferences and do not disable browser zoom. Responsive layouts must remain usable when text is enlarged.
-- **Contrast:** maintain at least `4.5:1` contrast for normal text and `3:1` for large text, focus indicators, and essential graphics. Check status, muted, and focus colors against their actual surfaces when changing tokens.
-- **Content Order:** labels, errors, and feedback should remain next to the control or data they describe in both desktop and mobile layouts.
+### Icon Buttons
+
+- Use Heroicons-style outlined icons with consistent stroke weight.
+- Icon-only buttons require an accessible `aria-label`.
+- Use a 10px radius for square icon controls.
+- Maintain at least a 40px target on desktop and 44px on touch layouts.
+
+### Inputs
+
+- Every input needs a visible label.
+- Place helper text below the input when context is needed.
+- Use a white surface, 1px border, and 10px radius.
+- Show a visible focus ring using `#08a77c`.
+- Do not use placeholder text as the only label.
+
+### Status Badges
+
+- Status must be expressed through text as well as color.
+- Use compact pills with a 999px radius.
+- Reserve green for active, successful, or positive states.
+- Use muted presentation for inactive or low-priority states.
+
+### Loading States
+
+- Use a spinner only when progress cannot be expressed more clearly.
+- Pair loading indicators with explanatory text, such as “Loading lead details.”
+- Respect `prefers-reduced-motion`.
+- Reserve layout space so content does not shift while loading.
+
+### Feedback Messages
+
+- Confirm successful actions with concise text.
+- Use an icon, label, and short explanation where useful.
+- Keep non-blocking feedback in a polite live region.
+- Error messages must explain the problem and the corrective action.
+
+## 7. Interaction States
+
+Every interactive component should define these states where applicable:
+
+- Default
+- Hover
+- Focus-visible
+- Active or selected
+- Disabled
+- Loading
+- Success
+- Error
+
+Use surface and border changes before introducing another color. Do not make hover states lighter gray text.
+
+## 8. Accessibility
+
+- Maintain at least 4.5:1 contrast for body text.
+- Use a visible `:focus-visible` outline: 3px `#08a77c` with an offset.
+- Ensure all controls are keyboard reachable.
+- Give icon-only controls accessible names.
+- Do not rely on color alone to communicate status.
+- Support reduced motion.
+- Keep touch targets at least 44×44px on mobile.
+- Preserve logical focus order across responsive layouts.
+
+## 9. Voice & Tone
+
+### Adjectives
+
+Quiet, operational, precise.
+
+### Messaging Principles
+
+- Use concise, task-oriented labels.
+- Prefer clear actions such as “Create lead,” “Export list,” and “Back to leads.”
+- Use short status labels and descriptive field labels.
+- Avoid decorative jargon, invented metrics, and competing visual emphasis.
+
+## 10. Imagery & Icons
+
+- Product interfaces do not use decorative hero imagery.
+- Use imagery only when it supports identity or data recognition.
+- Avoid fabricated logos and decorative stock imagery.
+- Use one coherent Heroicons-style icon family.
+- Never use emoji as functional icons.
+
+## 11. Do’s and Don’ts
+
+### Do
+
+- Use neutral surfaces with selective green emphasis.
+- Keep cards, forms, navigation, and actions visually consistent.
+- Use clear labels and visible focus states.
+- Reuse patterns documented in `guidelines.html`.
+
+### Don’t
+
+- Add gradients, glass effects, neon glows, or decorative illustrations.
+- Use green as a large background wash.
+- Introduce unapproved colors for component states.
+- Hide essential actions on mobile.
+- Create new one-off component patterns when an existing utility component fits.

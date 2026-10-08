@@ -1,0 +1,4239 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f1f2f2" />
+    <title>AI Manager — Manage Leads</title>
+    <style>
+      /* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+       Put this @layer first; product CSS outside the layer always wins. */
+      @layer od-layout {
+        :where(
+            .od-stack,
+            .od-row,
+            .od-row-top,
+            .od-cluster,
+            .od-grid,
+            .od-field,
+            .od-stat,
+            .od-cell,
+            .od-tile
+          )
+          > :where(*) {
+          min-width: 0;
+        }
+        .od-stack {
+          display: flex;
+          flex-direction: column;
+          gap: var(--od-gap, 8px);
+        }
+        .od-row {
+          display: flex;
+          align-items: center;
+          gap: var(--od-gap, 8px);
+        }
+        .od-row-top {
+          display: flex;
+          align-items: flex-start;
+          gap: var(--od-gap, 8px);
+        }
+        .od-cluster {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: var(--od-gap, 8px);
+        }
+        .od-fill {
+          flex: 1 1 0;
+          min-width: 0;
+        }
+        .od-fixed {
+          flex: none;
+        }
+        .od-grid {
+          display: grid;
+          gap: var(--od-gap, 12px);
+          grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr));
+        }
+        .od-stat,
+        .od-field,
+        .od-cell {
+          display: grid;
+          gap: var(--od-gap, 2px);
+        }
+        :where(.od-stat, .od-field, .od-cell) > :where(*) {
+          display: block;
+        }
+        .od-tile {
+          display: grid;
+          grid-template-rows: auto 1fr;
+        }
+        :where(.od-tile) > :where(*) {
+          display: block;
+        }
+        .od-media {
+          display: block;
+          width: 100%;
+          height: auto;
+          aspect-ratio: var(--od-ratio, auto);
+        }
+        .od-media-cover {
+          object-fit: cover;
+        }
+        .od-truncate {
+          display: block;
+          max-width: 100%;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+        .od-clamp-2,
+        .od-clamp-3 {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          overflow-wrap: anywhere;
+        }
+        .od-clamp-2 {
+          -webkit-line-clamp: 2;
+        }
+        .od-clamp-3 {
+          -webkit-line-clamp: 3;
+        }
+        .od-lines-2 {
+          min-height: calc(2 * 1.4em);
+        }
+        .od-nowrap {
+          white-space: nowrap;
+        }
+        .od-keep {
+          word-break: keep-all;
+          overflow-wrap: anywhere;
+        }
+        .od-screen {
+          display: grid;
+          grid-template-rows: auto minmax(0, 1fr) auto;
+          height: 100%;
+        }
+        .od-scroll {
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          min-height: 0;
+        }
+        .od-rail {
+          display: flex;
+          gap: var(--od-gap, 8px);
+          overflow-x: auto;
+          scroll-snap-type: x proximity;
+          scrollbar-width: none;
+          padding-inline: var(--od-rail-pad, 16px);
+          scroll-padding-inline: var(--od-rail-pad, 16px);
+        }
+        .od-rail::-webkit-scrollbar {
+          display: none;
+        }
+        :where(.od-rail) > :where(*) {
+          flex: none;
+          scroll-snap-align: start;
+        }
+        :where(.od-rail) > :where(:last-child) {
+          margin-inline-end: var(--od-rail-pad, 16px);
+        }
+        .od-spacer {
+          flex: none;
+          visibility: hidden;
+          pointer-events: none;
+        }
+        .od-touch {
+          min-width: 44px;
+          min-height: 44px;
+        }
+      }
+      /* /OD-LAYOUT-PRIMITIVES v1 */
+
+      :root {
+        color-scheme: light;
+        --page: #f0f1f1;
+        --panel: #fff;
+        --sidebar: #f8f8f8;
+        --ink: #111318;
+        --muted: #747981;
+        --line: #e8e9eb;
+        --line-strong: #d8dade;
+        --green: #08a77c;
+        --green-dark: #087b60;
+        --green-soft: #e9f7f2;
+        --red: #de5c60;
+        --red-soft: #fff0ef;
+        --amber: #d8785f;
+        --amber-soft: #fff4ef;
+        --purple: #9b52d4;
+        --purple-soft: #fbf1ff;
+        --radius-sm: 10px;
+        --radius-md: 16px;
+        --radius-lg: 22px;
+        --shadow: 0 14px 38px rgb(22 25 31 / 5%);
+        --font:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        min-width: 320px;
+        background: var(--page);
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: clamp(0px, 5.2vw, 76px);
+        color: var(--ink);
+        background: var(--page);
+        font: 15px/1.5 var(--font);
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button {
+        color: inherit;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      select:focus-visible {
+        outline: 3px solid rgb(8 167 124 / 36%);
+        outline-offset: 2px;
+      }
+      .app-frame {
+        width: min(1600px, 100%);
+        min-height: min(1160px, calc(100vh - 10.4vw));
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 258px minmax(0, 1fr);
+        overflow: clip;
+        background: var(--panel);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+      }
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 20px 14px 16px;
+        background: var(--sidebar);
+        border-right: 1px solid #f0f0f1;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 0 6px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .brand-mark {
+        display: grid;
+        width: 26px;
+        height: 30px;
+        flex: none;
+        place-items: center;
+        color: #fff;
+        background: #1558dc;
+        border-radius: 3px 11px 3px 3px;
+      }
+      .brand-mark svg {
+        width: 19px;
+        height: 19px;
+      }
+      .brand-name {
+        font-size: 21px;
+        font-weight: 720;
+        letter-spacing: -0.8px;
+      }
+      .sidebar-search {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 42px;
+        margin: 22px 2px 17px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--muted);
+      }
+      .sidebar-search svg {
+        width: 16px;
+        height: 16px;
+        flex: none;
+      }
+      .sidebar-search input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        color: var(--ink);
+        background: transparent;
+        font-size: 13px;
+      }
+      .sidebar-search input::placeholder {
+        color: #9a9da2;
+      }
+      .shortcut {
+        flex: none;
+        color: #9a9da2;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .nav-section {
+        margin: 4px 0 9px;
+      }
+      .nav-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 7px 9px;
+        color: #858990;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .nav-heading svg {
+        width: 16px;
+        height: 16px;
+        color: #777b81;
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+      }
+      .nav-list {
+        display: grid;
+        gap: 3px;
+        margin: 0;
+        padding: 0 2px 15px;
+        list-style: none;
+        border-bottom: 1px solid #e9e9ea;
+      }
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 40px;
+        padding: 0 10px;
+        color: #777b81;
+        border-radius: 10px;
+        text-decoration: none;
+        transition:
+          background-color 0.18s ease,
+          color 0.18s ease;
+      }
+      .nav-link svg {
+        width: 16px;
+        height: 16px;
+        flex: none;
+      }
+      .nav-link:hover {
+        color: #33373d;
+        background: #eee;
+      }
+      .nav-link[aria-current="page"] {
+        color: #16191e;
+        background: #fff;
+        box-shadow: 0 1px 3px rgb(15 18 22 / 8%);
+        font-weight: 580;
+      }
+      .sidebar-bottom {
+        margin-top: auto;
+      }
+      .upgrade-card {
+        margin: 12px 2px 14px;
+        padding: 18px 14px 14px;
+        text-align: center;
+        border: 1px solid #ededee;
+        border-radius: 18px;
+        background: #fff;
+      }
+      .upgrade-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+      .upgrade-card p {
+        max-width: 170px;
+        margin: 0 auto 14px;
+        color: #96999e;
+        font-size: 12px;
+      }
+      .upgrade-button {
+        min-height: 36px;
+        padding: 0 16px;
+        color: #fff;
+        border: 0;
+        border-radius: 99px;
+        background: #101318;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 5px 0;
+      }
+      .profile-avatar {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        flex: none;
+        place-items: center;
+        color: #513a26;
+        border-radius: 50%;
+        background: #e9d8c4;
+        font-weight: 700;
+      }
+      .profile-name {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .profile-role {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .profile-toggle {
+        margin-left: auto;
+        border: 0;
+        background: transparent;
+        color: #777;
+        cursor: pointer;
+      }
+      .profile-toggle svg {
+        width: 16px;
+        height: 16px;
+      }
+      .main {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--panel);
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 60px;
+        padding: 0 24px;
+        border-bottom: 1px solid #f0f0f1;
+      }
+      .breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+        color: #92959b;
+        font-size: 12px;
+      }
+      .breadcrumbs strong {
+        max-width: min(45vw, 280px);
+        overflow: hidden;
+        color: #202329;
+        font-weight: 560;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .back-button {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        margin-right: 3px;
+        place-items: center;
+        border: 1px solid #eee;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+      }
+      .back-button svg {
+        width: 14px;
+        height: 14px;
+        transform: rotate(180deg);
+      }
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+      .icon-button {
+        position: relative;
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        transition:
+          background-color 0.18s ease,
+          border-color 0.18s ease;
+      }
+      .icon-button:hover {
+        border-color: var(--line);
+        background: #f8f9f9;
+      }
+      .icon-button svg {
+        width: 17px;
+        height: 17px;
+      }
+      .notice-dot {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 6px;
+        height: 6px;
+        border: 1px solid #fff;
+        border-radius: 50%;
+        background: var(--red);
+      }
+      .content {
+        min-width: 0;
+        padding: 22px 14px 20px;
+      }
+      .page-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 0 0 19px;
+        padding: 0 1px;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(23px, 2vw, 28px);
+        line-height: 1.2;
+        letter-spacing: -0.8px;
+        font-weight: 650;
+      }
+      .heading-actions {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 0 13px;
+        border: 1px solid var(--line-strong);
+        border-radius: 99px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 13px;
+        transition:
+          background-color 0.18s ease,
+          border-color 0.18s ease,
+          transform 0.18s ease;
+      }
+      .button:hover {
+        background: #f8f9f9;
+        border-color: #bfc2c7;
+      }
+      .button:active {
+        transform: translateY(1px);
+      }
+      .button svg {
+        width: 16px;
+        height: 16px;
+      }
+      .button-primary {
+        color: #fff;
+        border-color: #11151b;
+        background: #11151b;
+      }
+      .button-primary:hover {
+        color: #fff;
+        border-color: #2b3139;
+        background: #2b3139;
+      }
+      .lead-panel {
+        min-width: 0;
+        overflow: clip;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #fff;
+      }
+      .panel-toolbar {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 57px;
+        padding: 0 12px;
+      }
+      .panel-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .table-tools {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .tool-button {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 1px solid #edeef0;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        transition:
+          background-color 0.18s ease,
+          border-color 0.18s ease;
+      }
+      .tool-button:hover,
+      .tool-button[aria-expanded="true"] {
+        border-color: #d6d9dd;
+        background: #f8f9f9;
+      }
+      .tool-button svg {
+        width: 16px;
+        height: 16px;
+      }
+      .search-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 0;
+        overflow: hidden;
+        transition: width 0.2s ease;
+      }
+      .search-wrap.is-open {
+        width: min(235px, 34vw);
+      }
+      .search-wrap input {
+        width: 100%;
+        min-width: 0;
+        height: 35px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #fff;
+        font-size: 13px;
+      }
+      .filter-wrap {
+        position: relative;
+      }
+      .filter-panel {
+        position: absolute;
+        z-index: 5;
+        top: 44px;
+        right: 0;
+        width: 224px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 12px 32px rgb(17 22 27 / 12%);
+      }
+      .filter-panel[hidden] {
+        display: none;
+      }
+      .filter-panel label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .filter-panel select {
+        width: 100%;
+        min-height: 38px;
+        margin-bottom: 12px;
+        padding: 0 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 13px;
+      }
+      .filter-panel .button {
+        width: 100%;
+        min-height: 36px;
+      }
+      .table-scroll {
+        width: 100%;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #dfe1e4 transparent;
+      }
+      table {
+        width: 100%;
+        min-width: 940px;
+        border-collapse: separate;
+        border-spacing: 0;
+        text-align: left;
+      }
+      thead th {
+        height: 34px;
+        padding: 0 10px;
+        color: #7b7f85;
+        background: #f5f5f6;
+        border-top: 1px solid #efeff0;
+        border-bottom: 1px solid #e6e7e9;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      thead th + th {
+        border-left: 1px solid #ececee;
+      }
+      thead th:first-child {
+        width: 31px;
+        padding-left: 12px;
+      }
+      thead th:nth-child(2) {
+        width: 26%;
+      }
+      thead th:nth-child(3) {
+        width: 11%;
+      }
+      thead th:nth-child(4) {
+        width: 21%;
+      }
+      thead th:nth-child(5) {
+        width: 18%;
+      }
+      thead th:nth-child(6) {
+        width: 9%;
+      }
+      thead th:nth-child(7) {
+        width: 9%;
+      }
+      thead th:last-child {
+        width: 112px;
+        text-align: center;
+      }
+      input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        accent-color: var(--green);
+        vertical-align: middle;
+        cursor: pointer;
+      }
+      tbody td {
+        height: 54px;
+        padding: 6px 10px;
+        border-bottom: 1px solid #ececee;
+        color: #555960;
+        font-size: 11px;
+        vertical-align: middle;
+      }
+      tbody td + td {
+        border-left: 1px solid #f0f0f1;
+      }
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+      tbody td:first-child {
+        padding-left: 12px;
+      }
+      tbody tr:hover {
+        background: #fcfdfd;
+      }
+      tbody tr.is-selected {
+        background: #f5fbf8;
+      }
+      .lead-person {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+      .avatar {
+        display: grid;
+        width: 29px;
+        height: 29px;
+        flex: none;
+        place-items: center;
+        overflow: hidden;
+        color: #31373d;
+        border: 1px solid rgb(0 0 0 / 5%);
+        border-radius: 50%;
+        background: #e6ecea;
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .avatar[data-tone="blue"] {
+        background: #dce7f4;
+        color: #345473;
+      }
+      .avatar[data-tone="rose"] {
+        background: #f0dfdf;
+        color: #714a4a;
+      }
+      .avatar[data-tone="gold"] {
+        background: #eee5d6;
+        color: #745c2e;
+      }
+      .avatar[data-tone="mint"] {
+        background: #dcece5;
+        color: #31664f;
+      }
+      .avatar[data-tone="violet"] {
+        background: #e9e1f0;
+        color: #5e4d70;
+      }
+      .lead-copy {
+        min-width: 0;
+      }
+      .lead-name {
+        display: block;
+        overflow: hidden;
+        color: #202329;
+        font-size: 11px;
+        font-weight: 580;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .lead-description {
+        display: block;
+        max-width: 188px;
+        overflow: hidden;
+        color: #93969c;
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .stage {
+        min-width: 135px;
+      }
+      .stage-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+        color: #33373d;
+        font-size: 11px;
+      }
+      .stage-percent {
+        color: #35393e;
+      }
+      .progress-track {
+        display: block;
+        width: 100%;
+        height: 6px;
+        overflow: hidden;
+        border-radius: 99px;
+        background: repeating-linear-gradient(
+          135deg,
+          #e9ebed 0,
+          #e9ebed 2px,
+          #f7f7f8 2px,
+          #f7f7f8 4px
+        );
+      }
+      .progress-fill {
+        display: block;
+        width: 62%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--green);
+      }
+      .company-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 100%;
+        color: #30343a;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .company-link span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .company-link svg {
+        width: 12px;
+        height: 12px;
+        flex: none;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 21px;
+        padding: 1px 9px;
+        border: 1px solid #63ad93;
+        border-radius: 99px;
+        color: #368b6e;
+        background: #fbfefc;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .status.meeting,
+      .status.follow-up {
+        color: #cc7962;
+        border-color: #e8a28c;
+        background: #fffaf8;
+      }
+      .status.qualified {
+        color: var(--purple);
+        border-color: #c37ce9;
+        background: #fffbff;
+      }
+      .table-scroll thead th:first-child,
+      .table-scroll thead th:nth-child(4),
+      .table-scroll thead th:nth-child(6),
+      .table-scroll thead th:last-child,
+      #leadRows td:first-child,
+      #leadRows td:nth-child(4),
+      #leadRows td:nth-child(6),
+      #leadRows td:last-child {
+        display: none;
+      }
+      .action-group {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-width: 96px;
+        padding: 2px 5px;
+        border: 1px solid #eceef0;
+        border-radius: 99px;
+        box-shadow: 0 2px 5px rgb(15 20 24 / 4%);
+      }
+      .action-button {
+        display: grid;
+        width: 27px;
+        height: 28px;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        color: #353a40;
+        background: transparent;
+        cursor: pointer;
+      }
+      .action-button:hover {
+        color: #087b60;
+        background: #eef8f4;
+      }
+      .action-button svg {
+        width: 15px;
+        height: 15px;
+      }
+      .empty-row td {
+        height: 100px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 48px;
+        padding: 0 13px;
+        color: #81858b;
+        border-top: 1px solid #efeff0;
+        font-size: 11px;
+      }
+      .pagination {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .page-button {
+        display: grid;
+        min-width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        color: #666b72;
+        background: transparent;
+        cursor: pointer;
+        font-size: 11px;
+      }
+      .page-button:hover,
+      .page-button[aria-current="page"] {
+        border-color: #eceef0;
+        color: #1a1d22;
+        background: #fff;
+      }
+      .page-button:disabled {
+        color: #c3c6ca;
+        cursor: not-allowed;
+      }
+      .mobile-menu {
+        display: none;
+      }
+      .toast {
+        position: fixed;
+        z-index: 10;
+        right: 24px;
+        bottom: 24px;
+        max-width: min(360px, calc(100vw - 32px));
+        padding: 12px 16px;
+        color: #fff;
+        border-radius: 12px;
+        background: #171b20;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+        font-size: 13px;
+      }
+      .toast[hidden] {
+        display: none;
+      }
+      dialog {
+        width: min(480px, calc(100% - 32px));
+        max-height: min(90vh, 760px);
+        padding: 0;
+        overflow: auto;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgb(0 0 0 / 20%);
+      }
+      dialog::backdrop {
+        background: rgb(19 23 28 / 42%);
+        backdrop-filter: blur(2px);
+      }
+      .dialog-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      .dialog-head h2 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: -0.3px;
+      }
+      .dialog-close {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+      }
+      .dialog-close svg {
+        width: 16px;
+        height: 16px;
+      }
+      .lead-form {
+        display: grid;
+        gap: 14px;
+        padding: 19px 20px 20px;
+      }
+      .form-field label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .form-field input,
+      .form-field select {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 11px;
+        border: 1px solid #dfe1e4;
+        border-radius: 9px;
+        background: #fff;
+        font-size: 14px;
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding-top: 4px;
+      }
+      .lead-person[role="button"] {
+        min-height: 44px;
+        padding-block: 4px;
+        border-radius: 9px;
+        cursor: pointer;
+      }
+      .lead-person[role="button"]:focus-visible {
+        outline: 3px solid rgb(8 167 124 / 36%);
+        outline-offset: 2px;
+      }
+      .lead-person[role="button"]:hover .lead-name {
+        color: var(--green-dark);
+      }
+      tbody tr.is-active-lead {
+        background: #f2faf6;
+      }
+      .detail-page[hidden] {
+        display: none;
+      }
+      .detail-page {
+        width: 100%;
+        min-width: 0;
+        max-width: 1120px;
+        margin-inline: auto;
+      }
+      .main.is-detail-view .breadcrumbs .back-button {
+        display: grid;
+      }
+      .detail-header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+      .detail-back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 13px;
+        border: 1px solid var(--line-strong);
+        border-radius: 99px;
+        color: #353a40;
+        background: #fff;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .detail-back:hover {
+        border-color: #bfc2c7;
+        background: #f8f9f9;
+      }
+      .detail-back svg {
+        width: 15px;
+        height: 15px;
+        transform: rotate(180deg);
+      }
+      .detail-heading {
+        min-width: 0;
+      }
+      .detail-kicker {
+        display: block;
+        margin-bottom: 2px;
+        color: #858990;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .detail-header h2 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.25;
+        letter-spacing: -0.5px;
+      }
+      .detail-identity {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 16px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 5px 18px rgb(22 25 31 / 3%);
+      }
+      .detail-identity-copy {
+        flex: 1;
+        min-width: 0;
+      }
+      .detail-identity-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 7px;
+      }
+      .detail-avatar {
+        width: 60px;
+        height: 60px;
+        font-size: 16px;
+      }
+      .detail-name {
+        margin: 0 0 3px;
+        font-size: clamp(22px, 2.2vw, 28px);
+        line-height: 1.25;
+        letter-spacing: -0.6px;
+        overflow-wrap: anywhere;
+      }
+      .detail-company {
+        margin: 0;
+        color: #555b63;
+        font-size: 15px;
+      }
+      .detail-description {
+        margin: 8px 0 0;
+        color: #62676e;
+        font-size: 15px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+      .detail-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .detail-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-width: 0;
+        min-height: 44px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .detail-action:hover {
+        border-color: #cfd8d3;
+        background: #f7fbf9;
+      }
+      .detail-action svg {
+        width: 15px;
+        height: 15px;
+        flex: none;
+      }
+      .detail-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+        align-items: start;
+        gap: 16px;
+      }
+      .detail-card {
+        min-width: 0;
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 5px 18px rgb(22 25 31 / 3%);
+      }
+      .detail-section {
+        min-width: 0;
+      }
+      .detail-section {
+        padding: 18px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .detail-card.detail-section {
+        padding: 22px;
+        border-bottom: 1px solid var(--line);
+      }
+      .detail-section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f1f2;
+      }
+      .detail-section-heading h3 {
+        margin: 0;
+        color: #202329;
+        font-size: 16px;
+        font-weight: 620;
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 16px;
+        margin: 0;
+      }
+      .detail-field {
+        min-width: 0;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f1;
+      }
+      .detail-field dt {
+        margin-bottom: 4px;
+        color: #747981;
+        font-size: 12px;
+      }
+      .detail-field dd {
+        margin: 0;
+        color: #282c32;
+        font-size: 15px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .detail-progress {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .detail-progress .progress-track {
+        width: 74px;
+        height: 6px;
+      }
+      .demo-tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0 8px;
+        border: 1px solid #e9ecea;
+        border-radius: 99px;
+        color: #68716c;
+        background: #f8faf9;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .activity-note {
+        margin: -2px 0 16px;
+        color: #747981;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .timeline {
+        display: grid;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .timeline-item {
+        position: relative;
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr);
+        gap: 0 12px;
+        padding: 0 0 20px;
+      }
+      .timeline-item:not(:last-child)::before {
+        position: absolute;
+        top: 28px;
+        bottom: 0;
+        left: 14px;
+        width: 1px;
+        background: #e6eeea;
+        content: "";
+      }
+      .timeline-marker {
+        z-index: 1;
+        display: grid;
+        width: 29px;
+        height: 29px;
+        place-items: center;
+        border: 1px solid #dceee6;
+        border-radius: 50%;
+        color: var(--green-dark);
+        background: #f5fbf8;
+      }
+      .timeline-marker svg {
+        width: 14px;
+        height: 14px;
+      }
+      .timeline-copy {
+        min-width: 0;
+        padding-top: 1px;
+      }
+      .timeline-meta {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+      .timeline-title {
+        color: #252a30;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .timeline-time {
+        flex: none;
+        color: #737880;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .timeline-copy p {
+        margin: 0;
+        color: #62676e;
+        font-size: 14px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .detail-back,
+        .detail-action {
+          transition: none;
+        }
+      }
+      @media (min-width: 1500px) {
+        .content {
+          padding: 22px 14px 20px;
+        }
+        .app-frame {
+          min-height: min(1160px, calc(100vh - 10.4vw));
+        }
+      }
+      @media (max-width: 1100px) {
+        body {
+          padding: 24px;
+        }
+        .app-frame {
+          min-height: calc(100vh - 48px);
+          grid-template-columns: 220px minmax(0, 1fr);
+        }
+      }
+      @media (min-width: 761px) and (max-width: 1100px) {
+        .detail-layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .lead-panel {
+          overflow: visible;
+        }
+        .panel-toolbar {
+          align-items: flex-start;
+          flex-wrap: wrap;
+          gap: 10px;
+          padding-block: 12px;
+        }
+        .table-tools {
+          max-width: 100%;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .table-scroll {
+          overflow: visible;
+        }
+        table {
+          display: block;
+          min-width: 0;
+        }
+        thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+        tbody {
+          display: grid;
+          gap: 10px;
+          padding: 10px;
+        }
+        tbody tr {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 44px;
+          gap: 7px 10px;
+          padding: 12px;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          background: #fff;
+        }
+        tbody tr:last-child {
+          border-bottom: 1px solid var(--line);
+        }
+        tbody tr:hover {
+          background: #fcfdfd;
+        }
+        tbody td {
+          display: block;
+          height: auto;
+          min-width: 0;
+          padding: 0;
+          border: 0 !important;
+          font-size: 13px;
+        }
+        tbody td:first-child {
+          display: grid;
+          grid-column: 2;
+          grid-row: 1;
+          width: 44px;
+          height: 44px;
+          place-items: center;
+          justify-self: end;
+        }
+        tbody td:first-child input {
+          width: 18px;
+          height: 18px;
+        }
+        tbody td:nth-child(2) {
+          grid-column: 1;
+          grid-row: 1;
+          align-self: center;
+        }
+        tbody td:nth-child(3) {
+          grid-column: 1;
+          grid-row: 3;
+          color: #4f555d;
+        }
+        tbody td:nth-child(4) {
+          grid-column: 1 / -1;
+          grid-row: 4;
+        }
+        tbody td:nth-child(5) {
+          grid-column: 1 / -1;
+          grid-row: 2;
+        }
+        tbody td:nth-child(6) {
+          grid-column: 2;
+          grid-row: 3;
+          align-self: start;
+          justify-self: end;
+        }
+        tbody td:nth-child(7) {
+          grid-column: 1 / -1;
+          grid-row: 5;
+          color: #555b63;
+        }
+        tbody td:nth-child(8) {
+          grid-column: 1 / -1;
+          grid-row: 6;
+        }
+        tbody td::before {
+          display: block;
+          margin: 0 0 3px;
+          color: #747981;
+          font-size: 11px;
+          font-weight: 550;
+        }
+        tbody td:nth-child(3)::before {
+          content: "Service";
+        }
+        tbody td:nth-child(4)::before {
+          content: "Stage";
+        }
+        tbody td:nth-child(5)::before {
+          content: "Company";
+        }
+        tbody td:nth-child(6)::before {
+          content: "Status";
+          text-align: right;
+        }
+        tbody td:nth-child(7)::before {
+          content: "Last contact";
+        }
+        tbody td:nth-child(8)::before {
+          content: "Actions";
+        }
+        .lead-person {
+          gap: 10px;
+        }
+        .lead-person[role="button"] {
+          min-height: 48px;
+        }
+        .avatar {
+          width: 38px;
+          height: 38px;
+        }
+        .lead-name {
+          font-size: 14px;
+        }
+        .lead-description {
+          max-width: none;
+          white-space: normal;
+          line-height: 1.4;
+        }
+        .stage {
+          display: grid;
+          gap: 6px;
+          min-width: 0;
+        }
+        .stage-top {
+          margin: 0;
+          font-size: 13px;
+        }
+        .progress-track {
+          width: 100%;
+          height: 6px;
+        }
+        .progress-fill {
+          width: 62%;
+        }
+        .company-link {
+          align-items: flex-start;
+          font-size: 13px;
+          white-space: normal;
+        }
+        .company-link span {
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        .action-group {
+          width: max-content;
+          max-width: 100%;
+          min-width: 0;
+          flex-direction: row;
+          justify-content: flex-start;
+          gap: 8px;
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .action-button {
+          width: 44px;
+          height: 44px;
+          border: 1px solid var(--line);
+          background: #fff;
+        }
+        .action-button:hover {
+          border-color: #cfd8d3;
+        }
+        tbody tr.empty-row {
+          display: block;
+          padding: 0;
+          border: 0;
+        }
+        tbody tr.empty-row td {
+          display: block;
+          width: auto;
+          height: 100px;
+          padding: 24px;
+          text-align: center;
+        }
+        tbody tr.empty-row td::before {
+          display: none;
+        }
+      }
+      @media (max-width: 760px) {
+        html,
+        body {
+          min-width: 320px;
+        }
+        body {
+          padding: 0;
+          font-size: 14px;
+        }
+        .app-frame {
+          display: block;
+          min-height: 100vh;
+          overflow: visible;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .sidebar {
+          display: none;
+        }
+        .main {
+          min-height: 100vh;
+        }
+        .topbar {
+          position: sticky;
+          z-index: 4;
+          top: 0;
+          min-height: 56px;
+          padding: 0 15px;
+          background: rgb(255 255 255 / 96%);
+          backdrop-filter: blur(10px);
+        }
+        .mobile-menu {
+          display: grid;
+          width: 36px;
+          height: 36px;
+          flex: none;
+          place-items: center;
+          border: 1px solid var(--line);
+          border-radius: 50%;
+          background: #fff;
+        }
+        .mobile-menu svg {
+          width: 17px;
+          height: 17px;
+        }
+        .breadcrumbs {
+          flex: 1;
+          gap: 7px;
+          padding-left: 9px;
+        }
+        .breadcrumbs .back-button {
+          display: none;
+        }
+        .top-actions {
+          gap: 3px;
+        }
+        .top-actions .icon-button {
+          width: 32px;
+          height: 32px;
+        }
+        .content {
+          padding: 19px 15px 28px;
+        }
+        .page-heading {
+          align-items: flex-start;
+          margin-bottom: 17px;
+        }
+        h1 {
+          font-size: 24px;
+        }
+        .heading-actions {
+          gap: 6px;
+        }
+        .heading-actions .button {
+          min-height: 36px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+        .heading-actions .button svg {
+          width: 14px;
+          height: 14px;
+        }
+        .lead-panel {
+          overflow: visible;
+          border-radius: 15px;
+        }
+        .panel-toolbar {
+          min-height: 53px;
+          padding: 0 10px;
+        }
+        .panel-title {
+          font-size: 14px;
+        }
+        .table-tools {
+          min-width: 0;
+          gap: 6px;
+        }
+        .filter-panel {
+          width: min(224px, calc(100vw - 32px));
+          max-width: calc(100vw - 32px);
+        }
+        .tool-button {
+          width: 44px;
+          height: 44px;
+        }
+        .search-wrap.is-open {
+          position: absolute;
+          z-index: 6;
+          top: calc(100% - 1px);
+          right: 8px;
+          width: min(280px, calc(100vw - 72px));
+          padding: 7px;
+          border: 1px solid var(--line);
+          border-radius: 11px;
+          background: #fff;
+          box-shadow: 0 8px 22px rgb(0 0 0 / 9%);
+        }
+        .search-wrap.is-open input {
+          min-height: 40px;
+        }
+        .table-scroll {
+          overflow: visible;
+        }
+        table {
+          display: block;
+          min-width: 0;
+        }
+        thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          clip-path: inset(50%);
+        }
+        tbody {
+          display: grid;
+          gap: 10px;
+          padding: 10px;
+        }
+        tbody tr {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) max-content;
+          grid-template-areas: "lead select" "company company" "service status" "stage stage" "contact contact" "actions actions";
+          align-items: start;
+          gap: 8px 10px;
+          padding: 12px;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          background: #fff;
+        }
+        tbody tr:last-child {
+          border-bottom: 1px solid var(--line);
+        }
+        tbody tr:hover {
+          background: #fcfdfd;
+        }
+        tbody td {
+          display: block;
+          height: auto;
+          min-width: 0;
+          padding: 0;
+          border: 0 !important;
+          font-size: 13px;
+        }
+        tbody td:first-child {
+          display: grid;
+          grid-area: select;
+          width: 44px;
+          height: 44px;
+          place-items: center;
+          justify-self: end;
+        }
+        tbody td:first-child input {
+          width: 18px;
+          height: 18px;
+        }
+        tbody td:nth-child(2) {
+          grid-area: lead;
+          align-self: center;
+        }
+        tbody td:nth-child(3) {
+          grid-area: service;
+          color: #4f555d;
+        }
+        tbody td:nth-child(4) {
+          grid-area: stage;
+        }
+        tbody td:nth-child(5) {
+          grid-area: company;
+        }
+        tbody td:nth-child(6) {
+          grid-area: status;
+          justify-self: end;
+          text-align: right;
+        }
+        tbody td:nth-child(7) {
+          grid-area: contact;
+          color: #555b63;
+        }
+        tbody td:nth-child(8) {
+          grid-area: actions;
+        }
+        tbody td::before {
+          display: block;
+          margin: 0 0 3px;
+          color: #747981;
+          font-size: 11px;
+          font-weight: 550;
+        }
+        tbody td:nth-child(3)::before {
+          content: "Service";
+        }
+        tbody td:nth-child(4)::before {
+          content: "Stage";
+        }
+        tbody td:nth-child(5)::before {
+          content: "Company";
+        }
+        tbody td:nth-child(6)::before {
+          content: "Status";
+          text-align: right;
+        }
+        tbody td:nth-child(7)::before {
+          content: "Last contact";
+        }
+        tbody td:nth-child(8)::before {
+          content: "Actions";
+        }
+        .lead-person {
+          width: 100%;
+          gap: 10px;
+        }
+        .lead-person[role="button"] {
+          min-height: 48px;
+        }
+        .lead-copy {
+          flex: 1 1 0;
+          min-width: 0;
+        }
+        .avatar {
+          width: 38px;
+          height: 38px;
+        }
+        .lead-name {
+          overflow: visible;
+          font-size: 14px;
+          line-height: 1.35;
+          text-overflow: clip;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        .lead-description {
+          max-width: none;
+          overflow: visible;
+          line-height: 1.4;
+          text-overflow: clip;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        .stage {
+          display: grid;
+          gap: 6px;
+          min-width: 0;
+        }
+        .stage-top {
+          margin: 0;
+          font-size: 13px;
+        }
+        .progress-track {
+          width: 100%;
+          height: 6px;
+        }
+        .progress-fill {
+          width: 62%;
+        }
+        .company-link {
+          display: flex;
+          width: 100%;
+          min-width: 0;
+          align-items: flex-start;
+          font-size: 13px;
+          white-space: normal;
+        }
+        .company-link span {
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: visible;
+          text-overflow: clip;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        .action-group {
+          width: max-content;
+          max-width: 100%;
+          min-width: 0;
+          flex-direction: row;
+          justify-content: flex-start;
+          gap: 8px;
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .action-button {
+          width: 44px;
+          height: 44px;
+          border: 1px solid var(--line);
+          background: #fff;
+        }
+        .action-button:hover {
+          border-color: #cfd8d3;
+        }
+        tbody tr.empty-row {
+          display: block;
+          padding: 0;
+          border: 0;
+        }
+        tbody tr.empty-row td {
+          display: block;
+          width: auto;
+          height: 100px;
+          padding: 24px;
+          text-align: center;
+        }
+        tbody tr.empty-row td::before {
+          display: none;
+        }
+        .status {
+          min-height: 20px;
+        }
+        .detail-header {
+          align-items: flex-start;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+        .detail-back {
+          min-height: 44px;
+          padding: 0 11px;
+        }
+        .detail-layout {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+        .detail-identity {
+          align-items: flex-start;
+          gap: 13px;
+          padding: 16px;
+        }
+        .detail-avatar {
+          width: 48px;
+          height: 48px;
+        }
+        .detail-name {
+          font-size: 20px;
+        }
+        .detail-grid {
+          gap: 0 12px;
+        }
+        .detail-card {
+          padding: 16px;
+        }
+        .detail-card.detail-section {
+          padding: 16px;
+        }
+        .detail-action {
+          min-height: 44px;
+        }
+        .table-footer {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 8px;
+          min-height: 0;
+          padding: 12px 10px;
+          font-size: 11px;
+        }
+        .pagination {
+          width: 100%;
+          justify-content: space-between;
+          gap: 0;
+        }
+        .page-button {
+          min-width: 44px;
+          height: 44px;
+        }
+      }
+      @media (max-width: 390px) {
+        .content {
+          padding-inline: 11px;
+        }
+        .panel-toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+          padding-block: 10px;
+        }
+        .table-tools {
+          width: 100%;
+          justify-content: flex-end;
+        }
+        .search-wrap.is-open {
+          width: min(250px, calc(100vw - 68px));
+        }
+        tbody {
+          padding: 8px;
+        }
+        tbody tr {
+          padding: 10px;
+        }
+        tbody td:nth-child(6)::before {
+          text-align: right;
+        }
+        .topbar {
+          padding-inline: 10px;
+        }
+        .top-actions .icon-button:nth-child(2) {
+          display: none;
+        }
+        .heading-actions .button {
+          gap: 5px;
+          padding-inline: 8px;
+        }
+        .detail-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .detail-actions {
+          gap: 6px;
+        }
+        .detail-action {
+          gap: 5px;
+          padding-inline: 6px;
+          font-size: 13px;
+        }
+        .status {
+          padding-inline: 7px;
+          font-size: 9px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg
+      aria-hidden="true"
+      width="0"
+      height="0"
+      style="position: absolute; overflow: hidden"
+    >
+      <!-- Heroicons v2 outline SVGs, Copyright (c) Tailwind Labs, Inc.
+       MIT License: Permission is hereby granted, free of charge, to any person obtaining a copy
+       of this software and associated documentation files (the "Software"), to deal in the Software
+       without restriction, including without limitation the rights to use, copy, modify, merge,
+       publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+       to whom the Software is furnished to do so, subject to inclusion of this copyright and
+       permission notice. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. -->
+      <symbol id="i-mark" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M4 3h5l11 8-11 10H4l7-10z" />
+      </symbol>
+      <symbol
+        id="i-search"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+        />
+      </symbol>
+      <symbol
+        id="i-grid"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
+        />
+      </symbol>
+      <symbol
+        id="i-inbox"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z"
+        />
+      </symbol>
+      <symbol
+        id="i-users"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
+        />
+      </symbol>
+      <symbol
+        id="i-calendar"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
+        />
+      </symbol>
+      <symbol
+        id="i-chart"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
+        />
+      </symbol>
+      <symbol
+        id="i-database"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"
+        />
+      </symbol>
+      <symbol
+        id="i-headset"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16.712 4.33a9.027 9.027 0 0 1 1.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 0 0-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 0 1 0 9.424m-4.138-5.976a3.736 3.736 0 0 0-.88-1.388 3.737 3.737 0 0 0-1.388-.88m2.268 2.268a3.765 3.765 0 0 1 0 2.528m-2.268-4.796a3.765 3.765 0 0 0-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 0 1-1.388.88m2.268-2.268 4.138 3.448m0 0a9.027 9.027 0 0 1-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0-3.448-4.138m3.448 4.138a9.014 9.014 0 0 1-9.424 0m5.976-4.138a3.765 3.765 0 0 1-2.528 0m0 0a3.736 3.736 0 0 1-1.388-.88 3.737 3.737 0 0 1-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 0 1-1.652-1.306 9.027 9.027 0 0 1-1.306-1.652m0 0 4.138-3.448M4.33 16.712a9.014 9.014 0 0 1 0-9.424m4.138 5.976a3.765 3.765 0 0 1 0-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 0 1 1.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 0 0-1.652 1.306A9.025 9.025 0 0 0 4.33 7.288"
+        />
+      </symbol>
+      <symbol
+        id="i-settings"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+        />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+        />
+      </symbol>
+      <symbol
+        id="i-bell"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+        />
+      </symbol>
+      <symbol
+        id="i-message"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"
+        />
+      </symbol>
+      <symbol
+        id="i-download"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+        />
+      </symbol>
+      <symbol
+        id="i-plus"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 4.5v15m7.5-7.5h-15"
+        />
+      </symbol>
+      <symbol
+        id="i-filter"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+        />
+      </symbol>
+      <symbol
+        id="i-more"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+        />
+      </symbol>
+      <symbol
+        id="i-arrow"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+        />
+      </symbol>
+      <symbol
+        id="i-trend-up"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"
+        />
+      </symbol>
+      <symbol
+        id="i-trend-down"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M2.25 6 9 12.75l4.286-4.286a11.948 11.948 0 0 1 4.306 6.43l.776 2.898m0 0 3.182-5.511m-3.182 5.51-5.511-3.181"
+        />
+      </symbol>
+      <symbol
+        id="i-target"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"
+        />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"
+        />
+      </symbol>
+      <symbol
+        id="i-play"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+        />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z"
+        />
+      </symbol>
+      <symbol
+        id="i-external"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+        />
+      </symbol>
+      <symbol
+        id="i-phone"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"
+        />
+      </symbol>
+      <symbol
+        id="i-mail"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+        />
+      </symbol>
+      <symbol
+        id="i-close"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M6 18 18 6M6 6l12 12"
+        />
+      </symbol>
+      <symbol
+        id="i-menu"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+        />
+      </symbol>
+      <symbol
+        id="i-chevron"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="m19.5 8.25-7.5 7.5-7.5-7.5"
+        />
+      </symbol>
+    </svg>
+
+    <div class="app-frame">
+      <aside class="sidebar" aria-label="Điều hướng chính">
+        <a class="brand" href="#top" aria-label="AI Manager, về đầu trang">
+          <span class="brand-mark"
+            ><svg aria-hidden="true"><use href="#i-mark" /></svg
+          ></span>
+          <span class="brand-name">AI Manager</span>
+        </a>
+        <label class="sidebar-search">
+          <svg aria-hidden="true"><use href="#i-search" /></svg>
+          <input
+            id="globalSearch"
+            type="search"
+            placeholder="Tìm lead..."
+            aria-label="Tìm kiếm lead"
+          />
+          <span class="shortcut" aria-hidden="true">⌘ S</span>
+        </label>
+        <nav>
+          <section class="nav-section" aria-label="Tổng quan">
+            <div class="nav-heading">
+              <span>Tổng quan</span
+              ><svg aria-hidden="true"><use href="#i-chevron" /></svg>
+            </div>
+            <ul class="nav-list">
+              <li>
+                <a class="nav-link" href="#stats" data-nav="Dashboard"
+                  ><svg aria-hidden="true"><use href="#i-grid" /></svg
+                  ><span>Dashboard</span></a
+                >
+              </li>
+              <li>
+                <a class="nav-link" href="#leads" data-nav="Inbox"
+                  ><svg aria-hidden="true"><use href="#i-inbox" /></svg
+                  ><span>Inbox</span></a
+                >
+              </li>
+              <li>
+                <a
+                  class="nav-link"
+                  href="#leads"
+                  aria-current="page"
+                  data-nav="Manage Leads"
+                  ><svg aria-hidden="true"><use href="#i-users" /></svg
+                  ><span>Manage Leads</span></a
+                >
+              </li>
+              <li>
+                <a class="nav-link" href="#leads" data-nav="Multi-calendar"
+                  ><svg aria-hidden="true"><use href="#i-calendar" /></svg
+                  ><span>Multi-calendar</span></a
+                >
+              </li>
+            </ul>
+          </section>
+          <section class="nav-section" aria-label="Công cụ">
+            <div class="nav-heading">
+              <span>Công cụ</span
+              ><svg aria-hidden="true"><use href="#i-chevron" /></svg>
+            </div>
+            <ul class="nav-list">
+              <li>
+                <a class="nav-link" href="#stats" data-nav="Analytics"
+                  ><svg aria-hidden="true"><use href="#i-chart" /></svg
+                  ><span>Analytics</span></a
+                >
+              </li>
+              <li>
+                <a class="nav-link" href="#leads" data-nav="Formation"
+                  ><svg aria-hidden="true"><use href="#i-database" /></svg
+                  ><span>Formation</span></a
+                >
+              </li>
+              <li>
+                <a class="nav-link" href="#leads" data-nav="Support"
+                  ><svg aria-hidden="true"><use href="#i-headset" /></svg
+                  ><span>Support</span></a
+                >
+              </li>
+            </ul>
+          </section>
+          <section class="nav-section" aria-label="Quản lý">
+            <div class="nav-heading">
+              <span>Quản lý</span
+              ><svg aria-hidden="true"><use href="#i-chevron" /></svg>
+            </div>
+            <ul class="nav-list">
+              <li>
+                <a class="nav-link" href="#leads" data-nav="User"
+                  ><svg aria-hidden="true"><use href="#i-users" /></svg
+                  ><span>User</span></a
+                >
+              </li>
+              <li>
+                <a class="nav-link" href="#stats" data-nav="Performance"
+                  ><svg aria-hidden="true"><use href="#i-chart" /></svg
+                  ><span>Performance</span></a
+                >
+              </li>
+              <li>
+                <a class="nav-link" href="#leads" data-nav="Settings"
+                  ><svg aria-hidden="true"><use href="#i-settings" /></svg
+                  ><span>Settings</span></a
+                >
+              </li>
+            </ul>
+          </section>
+        </nav>
+        <div class="sidebar-bottom">
+          <section class="upgrade-card" aria-label="Nâng cấp gói">
+            <strong>Upgrade to Pro</strong>
+            <p>Mở khóa thêm công cụ quản lý và báo cáo</p>
+            <button
+              class="upgrade-button"
+              type="button"
+              data-toast="Gói Pro chưa được bật trong bản prototype này."
+            >
+              Upgrade
+            </button>
+          </section>
+          <div class="profile">
+            <span class="profile-avatar" aria-hidden="true">D</span>
+            <span class="od-stack" style="--od-gap: 0"
+              ><span class="profile-name">David</span
+              ><span class="profile-role">Admin</span></span
+            >
+            <button
+              class="profile-toggle"
+              type="button"
+              aria-label="Tùy chọn tài khoản"
+              data-toast="Tài khoản David · Admin"
+            >
+              <svg aria-hidden="true"><use href="#i-chevron" /></svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main" id="top">
+        <header class="topbar">
+          <button
+            class="mobile-menu"
+            type="button"
+            aria-label="Mở điều hướng"
+            data-toast="Bản xem trước tập trung vào mục Manage Leads."
+          >
+            <svg aria-hidden="true"><use href="#i-menu" /></svg>
+          </button>
+          <div class="breadcrumbs">
+            <button
+              class="back-button"
+              id="breadcrumbBackButton"
+              type="button"
+              aria-label="Quay lại danh sách lead"
+              hidden
+            >
+              <svg aria-hidden="true"><use href="#i-arrow" /></svg></button
+            ><span>Overview</span><span aria-hidden="true">/</span
+            ><strong id="breadcrumbCurrent">Manage Leads</strong>
+          </div>
+          <div class="top-actions" aria-label="Tiện ích">
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Thông báo"
+              data-toast="Bạn đã xem các thông báo mới nhất."
+            >
+              <svg aria-hidden="true"><use href="#i-bell" /></svg
+              ><span class="notice-dot"></span>
+            </button>
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Tin nhắn"
+              data-toast="Hộp thư đang cập nhật."
+            >
+              <svg aria-hidden="true"><use href="#i-message" /></svg
+              ><span class="notice-dot"></span>
+            </button>
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Hỗ trợ"
+              data-toast="Liên hệ đội hỗ trợ qua support@example.com."
+            >
+              <svg aria-hidden="true"><use href="#i-headset" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="content">
+          <div id="leadListView">
+            <div class="page-heading">
+              <h1>All Leads</h1>
+              <div class="heading-actions">
+                <button class="button" id="exportButton" type="button">
+                  <svg aria-hidden="true"><use href="#i-download" /></svg
+                  ><span>Export</span>
+                </button>
+                <button
+                  class="button button-primary"
+                  id="newLeadButton"
+                  type="button"
+                >
+                  <svg aria-hidden="true"><use href="#i-plus" /></svg
+                  ><span>New Lead</span>
+                </button>
+              </div>
+            </div>
+
+            <section
+              class="lead-panel"
+              id="leads"
+              aria-labelledby="leadListTitle"
+            >
+              <div class="panel-toolbar">
+                <h2 class="panel-title" id="leadListTitle">Lead list</h2>
+                <div class="table-tools">
+                  <div class="search-wrap" id="tableSearchWrap">
+                    <input
+                      id="tableSearch"
+                      type="search"
+                      placeholder="Tìm tên, công ty..."
+                      aria-label="Tìm trong danh sách lead"
+                    />
+                  </div>
+                  <button
+                    class="tool-button"
+                    id="searchToggle"
+                    type="button"
+                    aria-label="Mở tìm kiếm"
+                    aria-expanded="false"
+                  >
+                    <svg aria-hidden="true"><use href="#i-search" /></svg>
+                  </button>
+                  <div class="filter-wrap">
+                    <button
+                      class="tool-button"
+                      id="filterToggle"
+                      type="button"
+                      aria-label="Lọc lead"
+                      aria-expanded="false"
+                      aria-controls="filterPanel"
+                    >
+                      <svg aria-hidden="true"><use href="#i-filter" /></svg>
+                    </button>
+                    <div class="filter-panel" id="filterPanel" hidden>
+                      <label for="statusFilter">Trạng thái</label>
+                      <select id="statusFilter">
+                        <option value="">Tất cả trạng thái</option>
+                        <option>New</option>
+                        <option>Meeting</option>
+                        <option>Open</option>
+                        <option>Qualified</option>
+                        <option>Follow Up</option>
+                      </select>
+                      <label for="stageFilter">Giai đoạn</label>
+                      <select id="stageFilter">
+                        <option value="">Tất cả giai đoạn</option>
+                        <option>Contacted</option>
+                        <option>Qualified</option>
+                        <option>Demo</option>
+                        <option>Negotiation</option>
+                      </select>
+                      <button class="button" id="clearFilters" type="button">
+                        Xóa bộ lọc
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    class="tool-button"
+                    id="quickExport"
+                    type="button"
+                    aria-label="Tải danh sách lead"
+                  >
+                    <svg aria-hidden="true"><use href="#i-download" /></svg>
+                  </button>
+                  <button
+                    class="tool-button"
+                    type="button"
+                    aria-label="Thêm tùy chọn danh sách"
+                    data-toast="Danh sách đang hiển thị các trường lead chính."
+                  >
+                    <svg aria-hidden="true"><use href="#i-more" /></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>
+                        <input
+                          type="checkbox"
+                          id="selectAll"
+                          aria-label="Chọn tất cả lead"
+                        />
+                      </th>
+                      <th>Lead</th>
+                      <th>Service</th>
+                      <th>Stage</th>
+                      <th>Company</th>
+                      <th>Status</th>
+                      <th>Last Contact</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leadRows">
+                    <tr data-status="New" data-stage="Contacted">
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label="Chọn Sophia Martinez"
+                        />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="rose"
+                            aria-hidden="true"
+                            >SM</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Sophia Martinez</span
+                            ><span class="lead-description"
+                              >Passionate about AI and machine learning</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Consulting</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Contacted</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="InnovTech Solutions"
+                          ><span>InnovTech Solutions</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">New</span></td>
+                      <td>5 min ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Sophia Martinez"
+                            data-action="Gọi Sophia Martinez"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Sophia Martinez"
+                            data-action="Mở cuộc trò chuyện với Sophia Martinez"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Sophia Martinez"
+                            data-action="Soạn email cho Sophia Martinez"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Meeting" data-stage="Qualified">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Liam Patel" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="mint"
+                            aria-hidden="true"
+                            >LP</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Liam Patel</span
+                            ><span class="lead-description"
+                              >Focused on cybersecurity and data
+                              protection</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Training</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Qualified</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="GlobalData Inc."
+                          ><span>GlobalData Inc.</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status meeting">Meeting</span></td>
+                      <td>12 min ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Liam Patel"
+                            data-action="Gọi Liam Patel"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Liam Patel"
+                            data-action="Mở cuộc trò chuyện với Liam Patel"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Liam Patel"
+                            data-action="Soạn email cho Liam Patel"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Open" data-stage="Demo">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Olivia Chen" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="gold"
+                            aria-hidden="true"
+                            >OC</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Olivia Chen</span
+                            ><span class="lead-description"
+                              >Exploring blockchain technology for finance</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Basic</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Demo</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="Cyberdyne Systems"
+                          ><span>Cyberdyne Systems</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">Open</span></td>
+                      <td>30 min ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Olivia Chen"
+                            data-action="Gọi Olivia Chen"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Olivia Chen"
+                            data-action="Mở cuộc trò chuyện với Olivia Chen"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Olivia Chen"
+                            data-action="Soạn email cho Olivia Chen"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Open" data-stage="Negotiation">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Ethan Kim" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="blue"
+                            aria-hidden="true"
+                            >EK</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Ethan Kim</span
+                            ><span class="lead-description"
+                              >Specializes in mobile app development</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Premium</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Negotiation</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="Quantum Leap Technologies"
+                          ><span>Quantum Leap Technologies</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">Open</span></td>
+                      <td>1 hr ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Ethan Kim"
+                            data-action="Gọi Ethan Kim"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Ethan Kim"
+                            data-action="Mở cuộc trò chuyện với Ethan Kim"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Ethan Kim"
+                            data-action="Soạn email cho Ethan Kim"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Qualified" data-stage="Contacted">
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label="Chọn Isabella Rossi"
+                        />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="violet"
+                            aria-hidden="true"
+                            >IR</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Isabella Rossi</span
+                            ><span class="lead-description"
+                              >Working on sustainable energy solutions</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Basic</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Contacted</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="Stellaris Innovations"
+                          ><span>Stellaris Innovations</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status qualified">Qualified</span></td>
+                      <td>3 hr ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Isabella Rossi"
+                            data-action="Gọi Isabella Rossi"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Isabella Rossi"
+                            data-action="Mở cuộc trò chuyện với Isabella Rossi"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Isabella Rossi"
+                            data-action="Soạn email cho Isabella Rossi"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Open" data-stage="Qualified">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Noah Johnson" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="blue"
+                            aria-hidden="true"
+                            >NJ</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Noah Johnson</span
+                            ><span class="lead-description"
+                              >Interested in augmented reality and design</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Premium</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Qualified</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="Apex Digital Group"
+                          ><span>Apex Digital Group</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">Open</span></td>
+                      <td>5 hr ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Noah Johnson"
+                            data-action="Gọi Noah Johnson"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Noah Johnson"
+                            data-action="Mở cuộc trò chuyện với Noah Johnson"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Noah Johnson"
+                            data-action="Soạn email cho Noah Johnson"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Open" data-stage="Demo">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Emma Garcia" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="rose"
+                            aria-hidden="true"
+                            >EG</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Emma Garcia</span
+                            ><span class="lead-description"
+                              >Developer focused on e-commerce platforms</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Basic</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Demo</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="Veridian Dynamics"
+                          ><span>Veridian Dynamics</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">Open</span></td>
+                      <td>1 day ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Emma Garcia"
+                            data-action="Gọi Emma Garcia"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Emma Garcia"
+                            data-action="Mở cuộc trò chuyện với Emma Garcia"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Emma Garcia"
+                            data-action="Soạn email cho Emma Garcia"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Open" data-stage="Negotiation">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Mason Ahmad" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="mint"
+                            aria-hidden="true"
+                            >MA</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Mason Ahmad</span
+                            ><span class="lead-description"
+                              >Researching advances in natural language AI</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Premium</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Negotiation</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="NovaTech Industries"
+                          ><span>NovaTech Industries</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">Open</span></td>
+                      <td>2 days ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Mason Ahmad"
+                            data-action="Gọi Mason Ahmad"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Mason Ahmad"
+                            data-action="Mở cuộc trò chuyện với Mason Ahmad"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Mason Ahmad"
+                            data-action="Soạn email cho Mason Ahmad"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Follow Up" data-stage="Contacted">
+                      <td>
+                        <input type="checkbox" aria-label="Chọn Ava Singh" />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="gold"
+                            aria-hidden="true"
+                            >AS</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">Ava Singh</span
+                            ><span class="lead-description"
+                              >Enthusiast of robotics and automation</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Basic</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Contacted</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="Zenith Global"
+                          ><span>Zenith Global</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status follow-up">Follow Up</span></td>
+                      <td>4 days ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi Ava Singh"
+                            data-action="Gọi Ava Singh"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn Ava Singh"
+                            data-action="Mở cuộc trò chuyện với Ava Singh"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email Ava Singh"
+                            data-action="Soạn email cho Ava Singh"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-status="Open" data-stage="Qualified">
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label="Chọn William Brown"
+                        />
+                      </td>
+                      <td>
+                        <div class="lead-person">
+                          <span
+                            class="avatar"
+                            data-tone="blue"
+                            aria-hidden="true"
+                            >WB</span
+                          ><span class="lead-copy"
+                            ><span class="lead-name">William Brown</span
+                            ><span class="lead-description"
+                              >Concentrates on cloud computing and
+                              analytics</span
+                            ></span
+                          >
+                        </div>
+                      </td>
+                      <td>Premium</td>
+                      <td>
+                        <div class="stage">
+                          <span class="od-fill"
+                            ><span class="stage-top"
+                              ><span>Qualified</span
+                              ><span class="stage-percent">35%</span></span
+                            ><span class="progress-track"
+                              ><span class="progress-fill"></span></span
+                          ></span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          class="company-link"
+                          href="#leads"
+                          data-company="OmniCorp"
+                          ><span>OmniCorp</span
+                          ><svg aria-hidden="true">
+                            <use href="#i-external" /></svg
+                        ></a>
+                      </td>
+                      <td><span class="status">Open</span></td>
+                      <td>6 days ago</td>
+                      <td>
+                        <div class="action-group">
+                          <button
+                            class="action-button"
+                            type="button"
+                            aria-label="Gọi William Brown"
+                            data-action="Gọi William Brown"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-phone" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Nhắn William Brown"
+                            data-action="Mở cuộc trò chuyện với William Brown"
+                          >
+                            <svg aria-hidden="true">
+                              <use href="#i-message" />
+                            </svg></button
+                          ><button
+                            class="action-button"
+                            type="button"
+                            aria-label="Email William Brown"
+                            data-action="Soạn email cho William Brown"
+                          >
+                            <svg aria-hidden="true"><use href="#i-mail" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <footer class="table-footer">
+                <span id="resultCount" aria-live="polite"
+                  >Showing 10 of 3,421 leads</span
+                >
+                <nav class="pagination" aria-label="Phân trang">
+                  <button
+                    class="page-button"
+                    type="button"
+                    aria-label="Trang trước"
+                    disabled
+                  >
+                    ‹</button
+                  ><button
+                    class="page-button"
+                    type="button"
+                    aria-current="page"
+                  >
+                    1</button
+                  ><button
+                    class="page-button"
+                    type="button"
+                    data-toast="Đang hiển thị 10 lead gần nhất."
+                  >
+                    2</button
+                  ><button
+                    class="page-button"
+                    type="button"
+                    data-toast="Đang hiển thị 10 lead gần nhất."
+                  >
+                    3</button
+                  ><span aria-hidden="true">…</span
+                  ><button
+                    class="page-button"
+                    type="button"
+                    data-toast="Đang hiển thị 10 lead gần nhất."
+                  >
+                    12</button
+                  ><button
+                    class="page-button"
+                    type="button"
+                    aria-label="Trang tiếp"
+                    data-toast="Đang hiển thị 10 lead gần nhất."
+                  >
+                    ›
+                  </button>
+                </nav>
+              </footer>
+            </section>
+          </div>
+          <section
+            class="detail-page"
+            id="leadDetailPage"
+            hidden
+            aria-labelledby="detailTitle"
+          >
+            <header class="detail-header">
+              <button class="detail-back" id="backToLeads" type="button">
+                <svg aria-hidden="true"><use href="#i-arrow" /></svg
+                ><span>Back to leads</span>
+              </button>
+              <div class="detail-heading">
+                <span class="detail-kicker">Lead profile</span>
+                <h2 id="detailTitle">Lead details</h2>
+              </div>
+            </header>
+            <section class="detail-identity" aria-labelledby="detailLeadName">
+              <span
+                class="avatar detail-avatar"
+                id="detailAvatar"
+                aria-hidden="true"
+              ></span>
+              <div class="detail-identity-copy">
+                <div class="detail-identity-top">
+                  <span class="status" id="detailStatus">Open</span>
+                </div>
+                <h3 class="detail-name" id="detailLeadName"></h3>
+                <p class="detail-company" id="detailCompany"></p>
+                <p class="detail-description" id="detailDescription"></p>
+                <div class="detail-actions" aria-label="Lead actions">
+                  <button class="detail-action" id="detailCall" type="button">
+                    <svg aria-hidden="true"><use href="#i-phone" /></svg
+                    ><span>Call</span>
+                  </button>
+                  <button
+                    class="detail-action"
+                    id="detailMessage"
+                    type="button"
+                  >
+                    <svg aria-hidden="true"><use href="#i-message" /></svg
+                    ><span>Message</span>
+                  </button>
+                  <button class="detail-action" id="detailEmail" type="button">
+                    <svg aria-hidden="true"><use href="#i-mail" /></svg
+                    ><span>Email</span>
+                  </button>
+                </div>
+              </div>
+            </section>
+            <div class="detail-layout">
+              <section
+                class="detail-card detail-section"
+                aria-labelledby="detailFieldsTitle"
+              >
+                <div class="detail-section-heading">
+                  <h3 id="detailFieldsTitle">Full details</h3>
+                  <span class="demo-tag">Sample record</span>
+                </div>
+                <dl class="detail-grid" id="detailFields"></dl>
+              </section>
+              <aside
+                class="detail-card detail-section"
+                aria-labelledby="activityTitle"
+              >
+                <div class="detail-section-heading">
+                  <h3 id="activityTitle">Follow-up activity</h3>
+                  <span class="demo-tag">Oldest first</span>
+                </div>
+                <p class="activity-note">
+                  Illustrative activity history · sample data
+                </p>
+                <ol class="timeline" id="detailTimeline"></ol>
+              </aside>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="leadDialog" aria-labelledby="dialogTitle">
+      <div class="dialog-head">
+        <h2 id="dialogTitle">Tạo lead mới</h2>
+        <button
+          class="dialog-close"
+          id="closeDialog"
+          type="button"
+          aria-label="Đóng"
+        >
+          <svg aria-hidden="true"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <form class="lead-form" id="leadForm">
+        <div class="form-field">
+          <label for="leadNameInput"
+            >Tên lead <span aria-hidden="true">*</span></label
+          ><input
+            id="leadNameInput"
+            name="name"
+            autocomplete="name"
+            required
+            maxlength="60"
+            placeholder="Ví dụ: Alex Nguyen"
+          />
+        </div>
+        <div class="form-field">
+          <label for="companyInput"
+            >Công ty <span aria-hidden="true">*</span></label
+          ><input
+            id="companyInput"
+            name="company"
+            autocomplete="organization"
+            required
+            maxlength="70"
+            placeholder="Tên công ty"
+          />
+        </div>
+        <div class="form-field">
+          <label for="serviceInput">Dịch vụ</label
+          ><select id="serviceInput" name="service">
+            <option>Consulting</option>
+            <option>Training</option>
+            <option>Basic</option>
+            <option>Premium</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="stageInput">Giai đoạn</label
+          ><select id="stageInput" name="stage">
+            <option>Contacted</option>
+            <option>Qualified</option>
+            <option>Demo</option>
+            <option>Negotiation</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="button" id="cancelDialog" type="button">Hủy</button
+          ><button class="button button-primary" type="submit">Lưu lead</button>
+        </div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <script>
+      const rows = document.getElementById("leadRows");
+      const tableSearch = document.getElementById("tableSearch");
+      const globalSearch = document.getElementById("globalSearch");
+      const statusFilter = document.getElementById("statusFilter");
+      const stageFilter = document.getElementById("stageFilter");
+      const resultCount = document.getElementById("resultCount");
+      const toast = document.getElementById("toast");
+      let toastTimer;
+      const leadListView = document.getElementById("leadListView");
+      const leadDetailPage = document.getElementById("leadDetailPage");
+      const detailBackButton = document.getElementById("backToLeads");
+      const breadcrumbBackButton = document.getElementById(
+        "breadcrumbBackButton",
+      );
+      const breadcrumbCurrent = document.getElementById("breadcrumbCurrent");
+      const appMain = document.querySelector(".main");
+      const baseDocumentTitle = document.title;
+      let activeLeadRow = null;
+      let activeLeadTrigger = null;
+      let listScrollY = 0;
+
+      function registerLeadTrigger(row) {
+        const trigger = row.querySelector(".lead-person");
+        if (!trigger) return;
+        const name = row.querySelector(".lead-name").textContent.trim();
+        trigger.setAttribute("role", "button");
+        trigger.setAttribute("tabindex", "0");
+        trigger.setAttribute("aria-label", "View details for " + name);
+      }
+
+      rows.querySelectorAll("tr[data-status]").forEach(registerLeadTrigger);
+
+      function makeDetailField(label, value, extraClass) {
+        const field = document.createElement("div");
+        field.className = "detail-field";
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const description = document.createElement("dd");
+        if (extraClass) description.className = extraClass;
+        description.textContent = value;
+        field.append(term, description);
+        return field;
+      }
+
+      function makeIcon(iconId) {
+        const svg = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg",
+        );
+        svg.setAttribute("aria-hidden", "true");
+        const use = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "use",
+        );
+        use.setAttribute("href", "#" + iconId);
+        svg.appendChild(use);
+        return svg;
+      }
+
+      function addTimelineItem(list, activity) {
+        const item = document.createElement("li");
+        item.className = "timeline-item";
+        const marker = document.createElement("span");
+        marker.className = "timeline-marker";
+        marker.appendChild(makeIcon(activity.icon));
+        const copy = document.createElement("div");
+        copy.className = "timeline-copy";
+        const meta = document.createElement("div");
+        meta.className = "timeline-meta";
+        const title = document.createElement("strong");
+        title.className = "timeline-title";
+        title.textContent = activity.title;
+        const time = document.createElement("time");
+        time.className = "timeline-time";
+        time.textContent = activity.when;
+        const note = document.createElement("p");
+        note.textContent = activity.note;
+        meta.append(title, time);
+        copy.append(meta, note);
+        item.append(marker, copy);
+        list.appendChild(item);
+      }
+
+      function fillLeadDetails(row) {
+        const cells = row.querySelectorAll(":scope > td");
+        const name = row.querySelector(".lead-name").textContent.trim();
+        const company = cells[4]
+          .querySelector(".company-link span")
+          .textContent.trim();
+        const service = cells[2].textContent.trim();
+        const stage = cells[3]
+          .querySelector(".stage-top > span")
+          .textContent.trim();
+        const progress = cells[3]
+          .querySelector(".stage-percent")
+          .textContent.trim();
+        const status = cells[5].textContent.trim();
+        const lastContact = cells[6].textContent.trim();
+        const description = row
+          .querySelector(".lead-description")
+          .textContent.trim();
+        const isNewDemoLead = row.dataset.created === "true";
+        const slug = name
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, ".")
+          .replace(/^\.|\.$/g, "");
+        const leadIndex = Array.from(
+          rows.querySelectorAll("tr[data-status]"),
+        ).indexOf(row);
+        const samplePhone =
+          "+1 (202) 555-01" +
+          String(10 + Math.max(0, leadIndex)).padStart(2, "0");
+
+        document.getElementById("detailAvatar").textContent = row
+          .querySelector(".avatar")
+          .textContent.trim();
+        document.getElementById("detailAvatar").className =
+          "avatar detail-avatar " +
+          (row.querySelector(".avatar").dataset.tone || "mint");
+        document.getElementById("detailAvatar").dataset.tone =
+          row.querySelector(".avatar").dataset.tone || "mint";
+        document.getElementById("detailLeadName").textContent = name;
+        document.getElementById("detailCompany").textContent = company;
+        document.getElementById("detailDescription").textContent =
+          description || "No description provided.";
+        const statusNode = document.getElementById("detailStatus");
+        statusNode.className =
+          "status " + status.toLowerCase().replace(/\s+/g, "-");
+        statusNode.textContent = status;
+
+        const fields = document.getElementById("detailFields");
+        fields.replaceChildren();
+        fields.append(
+          makeDetailField("Service", service),
+          makeDetailField("Pipeline stage", stage),
+          makeDetailField("Progress", progress),
+          makeDetailField("Last contact", lastContact),
+          makeDetailField(
+            "Email",
+            isNewDemoLead ? "Not provided" : slug + "@example.com",
+          ),
+          makeDetailField(
+            "Phone",
+            isNewDemoLead ? "Not provided" : samplePhone,
+          ),
+          makeDetailField(
+            "Lead source",
+            isNewDemoLead ? "Prototype form" : "Website inquiry",
+          ),
+          makeDetailField("Assigned to", "David"),
+        );
+
+        const timeline = document.getElementById("detailTimeline");
+        timeline.replaceChildren();
+        if (isNewDemoLead) {
+          addTimelineItem(timeline, {
+            when: "Just now",
+            icon: "i-plus",
+            title: "Lead created",
+            note: "This lead was added using the prototype form.",
+          });
+        } else {
+          const lastActivity =
+            status === "Meeting"
+              ? {
+                  icon: "i-calendar",
+                  title: "Meeting scheduled",
+                  note: "A follow-up meeting was added for " + company + ".",
+                }
+              : status === "Qualified"
+                ? {
+                    icon: "i-users",
+                    title: "Lead qualified",
+                    note:
+                      "The lead was marked as qualified for " + service + ".",
+                  }
+                : status === "Follow Up"
+                  ? {
+                      icon: "i-calendar",
+                      title: "Follow-up reminder",
+                      note: "A reminder was set to continue the conversation.",
+                    }
+                  : stage === "Demo"
+                    ? {
+                        icon: "i-play",
+                        title: "Product demo",
+                        note: "A product walkthrough was recorded in this sample history.",
+                      }
+                    : stage === "Negotiation"
+                      ? {
+                          icon: "i-message",
+                          title: "Follow-up discussion",
+                          note:
+                            "Next steps were discussed with " + company + ".",
+                        }
+                      : {
+                          icon: "i-phone",
+                          title: "Follow-up call",
+                          note: "A follow-up call was recorded in this sample history.",
+                        };
+          addTimelineItem(timeline, {
+            when: "14 days ago",
+            icon: "i-plus",
+            title: "Lead added",
+            note: "Lead entered the sample pipeline.",
+          });
+          addTimelineItem(timeline, {
+            when: "8 days ago",
+            icon: "i-mail",
+            title: "Introduction sent",
+            note:
+              "An overview of " + service + " was shared with " + company + ".",
+          });
+          addTimelineItem(timeline, {
+            when: lastContact,
+            icon: lastActivity.icon,
+            title: lastActivity.title,
+            note: lastActivity.note,
+          });
+        }
+
+        document.getElementById("detailCall").dataset.action = isNewDemoLead
+          ? "Phone number not provided for " + name
+          : "Call " + name + " at " + samplePhone;
+        document.getElementById("detailMessage").dataset.action =
+          "Open a message for " + name;
+        document.getElementById("detailEmail").dataset.action = isNewDemoLead
+          ? "Email address not provided for " + name
+          : "Compose an email to " + slug + "@example.com";
+      }
+
+      function openLeadDetails(row, trigger) {
+        if (!row) return;
+        activeLeadRow = row;
+        activeLeadTrigger = trigger;
+        listScrollY = window.scrollY;
+        row.classList.add("is-active-lead");
+        fillLeadDetails(row);
+        leadListView.hidden = true;
+        leadDetailPage.hidden = false;
+        appMain.classList.add("is-detail-view");
+        breadcrumbCurrent.textContent = row
+          .querySelector(".lead-name")
+          .textContent.trim();
+        document.title =
+          breadcrumbCurrent.textContent + " — Lead details | AI Manager";
+        window.scrollTo(0, 0);
+        detailBackButton.focus({ preventScroll: true });
+      }
+
+      function returnToLeadList() {
+        leadDetailPage.hidden = true;
+        leadListView.hidden = false;
+        appMain.classList.remove("is-detail-view");
+        breadcrumbCurrent.textContent = "Manage Leads";
+        document.title = baseDocumentTitle;
+        window.scrollTo(0, listScrollY);
+        if (activeLeadRow) activeLeadRow.classList.remove("is-active-lead");
+        if (activeLeadTrigger && activeLeadTrigger.isConnected)
+          activeLeadTrigger.focus({ preventScroll: true });
+        activeLeadRow = null;
+        activeLeadTrigger = null;
+      }
+
+      rows.addEventListener("click", function (event) {
+        const trigger = event.target.closest('.lead-person[role="button"]');
+        if (trigger)
+          openLeadDetails(trigger.closest("tr[data-status]"), trigger);
+      });
+      rows.addEventListener("keydown", function (event) {
+        const trigger = event.target.closest('.lead-person[role="button"]');
+        if (trigger && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          openLeadDetails(trigger.closest("tr[data-status]"), trigger);
+        }
+      });
+      detailBackButton.addEventListener("click", returnToLeadList);
+      breadcrumbBackButton.addEventListener("click", returnToLeadList);
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.hidden = false;
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(function () {
+          toast.hidden = true;
+        }, 2800);
+      }
+
+      function filterRows() {
+        const query = (tableSearch.value || globalSearch.value)
+          .trim()
+          .toLocaleLowerCase();
+        const status = statusFilter.value;
+        const stage = stageFilter.value;
+        const allRows = Array.from(rows.querySelectorAll("tr[data-status]"));
+        let visible = 0;
+        allRows.forEach(function (row) {
+          const matchesText =
+            !query || row.textContent.toLocaleLowerCase().includes(query);
+          const matchesStatus = !status || row.dataset.status === status;
+          const matchesStage = !stage || row.dataset.stage === stage;
+          const show = matchesText && matchesStatus && matchesStage;
+          row.hidden = !show;
+          if (show) visible += 1;
+        });
+        const oldEmpty = rows.querySelector(".empty-row");
+        if (oldEmpty) oldEmpty.remove();
+        if (visible === 0) {
+          const empty = document.createElement("tr");
+          empty.className = "empty-row";
+          empty.innerHTML =
+            '<td colspan="8">Không tìm thấy lead phù hợp. Hãy thử từ khóa hoặc bộ lọc khác.</td>';
+          rows.appendChild(empty);
+        }
+        resultCount.textContent =
+          "Showing " +
+          visible +
+          " of " +
+          (3421 + Math.max(0, allRows.length - 10)).toLocaleString("en-US") +
+          " leads";
+        document.getElementById("selectAll").checked = false;
+      }
+
+      tableSearch.addEventListener("input", function () {
+        globalSearch.value = "";
+        filterRows();
+      });
+      globalSearch.addEventListener("input", function () {
+        tableSearch.value = "";
+        filterRows();
+      });
+      statusFilter.addEventListener("change", filterRows);
+      stageFilter.addEventListener("change", filterRows);
+
+      const searchWrap = document.getElementById("tableSearchWrap");
+      const searchToggle = document.getElementById("searchToggle");
+      searchToggle.addEventListener("click", function () {
+        const open = searchToggle.getAttribute("aria-expanded") !== "true";
+        searchToggle.setAttribute("aria-expanded", String(open));
+        searchWrap.classList.toggle("is-open", open);
+        if (open) tableSearch.focus();
+        else {
+          tableSearch.value = "";
+          filterRows();
+        }
+      });
+      document.addEventListener("keydown", function (event) {
+        if (
+          (event.metaKey || event.ctrlKey) &&
+          event.key.toLowerCase() === "s"
+        ) {
+          event.preventDefault();
+          searchToggle.click();
+        }
+        if (event.key === "Escape")
+          document.getElementById("filterPanel").hidden = true;
+      });
+
+      const filterToggle = document.getElementById("filterToggle");
+      const filterPanel = document.getElementById("filterPanel");
+      filterToggle.addEventListener("click", function () {
+        const open = filterPanel.hidden;
+        filterPanel.hidden = !open;
+        filterToggle.setAttribute("aria-expanded", String(open));
+        if (open) statusFilter.focus();
+      });
+      document
+        .getElementById("clearFilters")
+        .addEventListener("click", function () {
+          statusFilter.value = "";
+          stageFilter.value = "";
+          filterPanel.hidden = true;
+          filterToggle.setAttribute("aria-expanded", "false");
+          filterRows();
+          showToast("Đã xóa bộ lọc.");
+        });
+      document.addEventListener("click", function (event) {
+        if (!event.target.closest(".filter-wrap") && !filterPanel.hidden) {
+          filterPanel.hidden = true;
+          filterToggle.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      document
+        .getElementById("selectAll")
+        .addEventListener("change", function (event) {
+          rows
+            .querySelectorAll(
+              'tr[data-status]:not([hidden]) input[type="checkbox"]',
+            )
+            .forEach(function (checkbox) {
+              checkbox.checked = event.target.checked;
+              checkbox
+                .closest("tr")
+                .classList.toggle("is-selected", checkbox.checked);
+            });
+        });
+      rows.addEventListener("change", function (event) {
+        if (event.target.matches('input[type="checkbox"]')) {
+          event.target
+            .closest("tr")
+            .classList.toggle("is-selected", event.target.checked);
+        }
+      });
+
+      function csvEscape(value) {
+        return '"' + String(value).replaceAll('"', '""') + '"';
+      }
+      function exportLeads() {
+        const visibleRows = Array.from(
+          rows.querySelectorAll("tr[data-status]:not([hidden])"),
+        );
+        const data = [
+          ["Lead", "Service", "Stage", "Company", "Status", "Last Contact"],
+        ];
+        visibleRows.forEach(function (row) {
+          const cells = row.querySelectorAll(":scope > td");
+          data.push([
+            cells[1].querySelector(".lead-name").textContent,
+            cells[2].textContent.trim(),
+            cells[3].querySelector(".stage-top > span").textContent,
+            cells[4].querySelector(".company-link span").textContent,
+            cells[5].textContent.trim(),
+            cells[6].textContent.trim(),
+          ]);
+        });
+        const csv =
+          "\ufeff" +
+          data
+            .map(function (line) {
+              return line.map(csvEscape).join(",");
+            })
+            .join("\r\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "ai-manager-leads.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast("Đã xuất " + visibleRows.length + " lead ra CSV.");
+      }
+      document
+        .getElementById("exportButton")
+        .addEventListener("click", exportLeads);
+      document
+        .getElementById("quickExport")
+        .addEventListener("click", exportLeads);
+
+      const leadDialog = document.getElementById("leadDialog");
+      document
+        .getElementById("newLeadButton")
+        .addEventListener("click", function () {
+          leadDialog.showModal();
+          document.getElementById("leadNameInput").focus();
+        });
+      document
+        .getElementById("closeDialog")
+        .addEventListener("click", function () {
+          leadDialog.close();
+        });
+      document
+        .getElementById("cancelDialog")
+        .addEventListener("click", function () {
+          leadDialog.close();
+        });
+      leadDialog.addEventListener("click", function (event) {
+        if (event.target === leadDialog) leadDialog.close();
+      });
+      document
+        .getElementById("leadForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+          const name = String(form.get("name")).trim();
+          const company = String(form.get("company")).trim();
+          if (!name || !company) return;
+          const stage = String(form.get("stage"));
+          const service = String(form.get("service"));
+          const initials = name
+            .split(/\s+/)
+            .slice(0, 2)
+            .map(function (part) {
+              return part.charAt(0).toLocaleUpperCase();
+            })
+            .join("");
+          const row = document.createElement("tr");
+          row.dataset.status = "New";
+          row.dataset.stage = stage;
+          row.dataset.created = "true";
+          row.innerHTML =
+            '<td><input type="checkbox" aria-label="Chọn lead"></td><td><div class="lead-person"><span class="avatar" data-tone="mint" aria-hidden="true"></span><span class="lead-copy"><span class="lead-name"></span><span class="lead-description">Lead vừa được thêm</span></span></div></td><td></td><td><div class="stage"><span class="od-fill"><span class="stage-top"><span></span><span class="stage-percent">0%</span></span><span class="progress-track"><span class="progress-fill" style="width:0"></span></span></span></div></td><td><a class="company-link" href="#leads"><span></span><svg aria-hidden="true"><use href="#i-external"/></svg></a></td><td><span class="status">New</span></td><td>Just now</td><td><div class="action-group"><button class="action-button" type="button" aria-label="Gọi lead"><svg aria-hidden="true"><use href="#i-phone"/></svg></button><button class="action-button" type="button" aria-label="Nhắn lead"><svg aria-hidden="true"><use href="#i-message"/></svg></button><button class="action-button" type="button" aria-label="Email lead"><svg aria-hidden="true"><use href="#i-mail"/></svg></button></div></td>';
+          row.querySelector(".avatar").textContent = initials;
+          row.querySelector(".lead-name").textContent = name;
+          row.querySelector("td:nth-child(3)").textContent = service;
+          row.querySelector(".stage-top > span").textContent = stage;
+          row.querySelector(".company-link span").textContent = company;
+          row
+            .querySelector('input[type="checkbox"]')
+            .setAttribute("aria-label", "Chọn " + name);
+          row
+            .querySelectorAll(".action-button")
+            .forEach(function (button, index) {
+              const action = ["Gọi ", "Nhắn ", "Email "][index] + name;
+              button.setAttribute("aria-label", action);
+              button.dataset.action = action;
+            });
+          registerLeadTrigger(row);
+          rows.prepend(row);
+          event.currentTarget.reset();
+          leadDialog.close();
+          statusFilter.value = "";
+          stageFilter.value = "";
+          tableSearch.value = "";
+          globalSearch.value = "";
+          filterRows();
+          document.getElementById("totalLeads").textContent = (
+            3421 +
+            rows.querySelectorAll("tr[data-status]").length -
+            10
+          ).toLocaleString("en-US");
+          document.getElementById("newToday").textContent = String(
+            42 + rows.querySelectorAll('tr[data-status="New"]').length - 1,
+          );
+          showToast(name + " đã được thêm vào danh sách.");
+        });
+
+      document.addEventListener("click", function (event) {
+        const action = event.target.closest("[data-action]");
+        if (action) showToast(action.dataset.action + " — thao tác sẵn sàng.");
+        const toastButton = event.target.closest("[data-toast]");
+        if (toastButton) showToast(toastButton.dataset.toast);
+        const nav = event.target.closest("[data-nav]");
+        if (nav && nav.dataset.nav !== "Manage Leads") {
+          event.preventDefault();
+          showToast("Bản prototype hiện tập trung vào Manage Leads.");
+        }
+        const company = event.target.closest("[data-company]");
+        if (company) {
+          event.preventDefault();
+          showToast("Hồ sơ công ty: " + company.dataset.company);
+        }
+        const scrollButton = event.target.closest("[data-scroll]");
+        if (scrollButton)
+          document
+            .getElementById(scrollButton.dataset.scroll)
+            .scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    </script>
+  </body>
+</html>

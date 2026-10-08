@@ -15,11 +15,19 @@ const convert = (queryClient: QueryClient) => (m: any) => {
   };
 };
 
-export const createAppRouter = (queryClient: QueryClient) =>
+const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: paths.home.path,
       lazy: () => import("./routes/landing").then(convert(queryClient)),
+    },
+    {
+      path: paths.leads.path,
+      lazy: () => import("./routes/leads").then(convert(queryClient)),
+    },
+    {
+      path: paths.leadDetails.path,
+      lazy: () => import("./routes/lead-detail").then(convert(queryClient)),
     },
     {
       path: "*",
