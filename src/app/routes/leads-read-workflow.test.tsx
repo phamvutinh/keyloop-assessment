@@ -143,7 +143,7 @@ describe("lead browse and read workflow", () => {
     renderRoutes();
 
     expect(screen.queryByText("3 sample leads")).not.toBeInTheDocument();
-    expect(screen.getByText("Showing 10 of 12 leads")).toBeInTheDocument();
+    expect(screen.getByText("Showing 10 of 150 leads")).toBeInTheDocument();
     expect(
       screen.getByRole("navigation", { name: "Lead list pagination" }),
     ).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe("lead browse and read workflow", () => {
     const searchInput = screen.getByRole("searchbox", {
       name: "Search by lead name",
     });
-    expect(screen.getByText("Showing 10 of 12 leads")).toBeInTheDocument();
+    expect(screen.getByText("Showing 10 of 150 leads")).toBeInTheDocument();
 
     await user.type(searchInput, "Anna");
 

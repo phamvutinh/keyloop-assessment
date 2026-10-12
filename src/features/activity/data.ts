@@ -1,3 +1,4 @@
+import { leads } from "@/features/leads/data";
 import type { ActivitySort, ActivityType, LeadActivity } from "@/types/api";
 
 const activityFixtures: Omit<LeadActivity, "type">[] = [
@@ -188,13 +189,34 @@ const leadIdByFixtureId: Record<string, string> = {
 
 const fixtureActivityTypes: ActivityType[] = ["call", "email", "message"];
 
-export const fixtureActivities: LeadActivity[] = activityFixtures.map(
+const mappedFixtureActivities: LeadActivity[] = activityFixtures.map(
   (activity, index) => ({
     ...activity,
     leadId: leadIdByFixtureId[activity.leadId],
     type: fixtureActivityTypes[index % fixtureActivityTypes.length],
   }),
 );
+
+const leadIdsWithFixtureActivities = new Set(
+  mappedFixtureActivities.map((activity) => activity.leadId),
+);
+
+const generatedFixtureActivities: LeadActivity[] = leads
+  .filter((lead) => !leadIdsWithFixtureActivities.has(lead.id))
+  .map((lead, index) => ({
+    id: `activity-${lead.id}-initial`,
+    leadId: lead.id,
+    type: fixtureActivityTypes[index % fixtureActivityTypes.length],
+    note: "Reviewed the website inquiry and queued the lead for follow-up.",
+    createdAt: new Date(
+      Date.parse(lead.createdAt) + 30 * 60 * 1000,
+    ).toISOString(),
+  }));
+
+export const fixtureActivities: LeadActivity[] = [
+  ...mappedFixtureActivities,
+  ...generatedFixtureActivities,
+];
 
 export const sortActivities = (
   activities: LeadActivity[],

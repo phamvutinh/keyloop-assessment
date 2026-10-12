@@ -1,6 +1,6 @@
 import type { Lead } from "@/types/api";
 
-export const leads: Lead[] = [
+const featuredLeads: Lead[] = [
   {
     id: "3cecaaa6-8871-4ada-89ce-9f5c5cbcbc97",
     name: "Anna Reed",
@@ -110,6 +110,111 @@ export const leads: Lead[] = [
     createdAt: "2026-01-23T17:41:00.000Z",
   },
 ];
+
+const firstNames = [
+  "Aisha",
+  "Ben",
+  "Cara",
+  "Daniel",
+  "Elena",
+  "Freddie",
+  "Grace",
+  "Hugo",
+  "Ivy",
+  "Jack",
+  "Keira",
+  "Liam",
+  "Maya",
+  "Nathan",
+  "Orla",
+  "Peter",
+  "Ruby",
+  "Sam",
+  "Tara",
+  "Victor",
+  "Willow",
+  "Yusuf",
+  "Zoe",
+] as const;
+
+const lastNames = [
+  "Adams",
+  "Bailey",
+  "Clarke",
+  "Davies",
+  "Evans",
+  "Foster",
+  "Green",
+  "Hall",
+  "Irving",
+  "Jones",
+  "Khan",
+  "Lewis",
+  "Morris",
+  "Norris",
+  "Owen",
+  "Parker",
+  "Quinn",
+  "Roberts",
+  "Stewart",
+  "Turner",
+  "Usman",
+  "Walker",
+  "Young",
+] as const;
+
+const inquiryMessages = [
+  "I found a nearly new hatchback on your website and would like to know if it is still available for viewing.",
+  "Please send finance examples for the compact SUV, including a deposit around ten percent.",
+  "I would like to part-exchange my current car and understand the valuation process before booking a visit.",
+  "Can someone confirm the maintenance history and warranty details for the approved used estate?",
+  "I am comparing petrol and hybrid options and would appreciate a call about running costs.",
+  "Please help me arrange a weekend test drive for the automatic model listed online.",
+  "I need a family car with rear parking sensors and ISOFIX points. Please share suitable stock.",
+  "Could you send more photos and the full specification for the vehicle advertised this morning?",
+  "I want to check delivery timing before reserving the electric model on your site.",
+  "Please call me about monthly payment options and any current offers on used vehicles.",
+] as const;
+
+const emailDomains = [
+  "example.com",
+  "mail.example",
+  "demo.test",
+  "customer.test",
+] as const;
+
+const createGeneratedLead = (index: number): Lead => {
+  const leadNumber = index + featuredLeads.length + 1;
+  const firstName = firstNames[index % firstNames.length];
+  const lastName = lastNames[(index * 7) % lastNames.length];
+  const name = `${firstName} ${lastName}`;
+  const emailName = `${firstName}.${lastName}.${leadNumber}`.toLowerCase();
+  const createdAt = new Date(
+    Date.UTC(2026, 1, 1, 8 + (index % 10), (index * 11) % 60),
+  );
+  createdAt.setUTCDate(createdAt.getUTCDate() + index);
+
+  return {
+    id: `mock-lead-${String(leadNumber).padStart(3, "0")}`,
+    name,
+    email:
+      index % 6 === 0
+        ? null
+        : `${emailName}@${emailDomains[index % emailDomains.length]}`,
+    phone:
+      index % 5 === 0
+        ? null
+        : `+44 7${String(400000000 + index * 3719).padStart(9, "0")}`,
+    message: inquiryMessages[index % inquiryMessages.length],
+    createdAt: createdAt.toISOString(),
+  };
+};
+
+const generatedLeads = Array.from({ length: 138 }, (_, index) =>
+  createGeneratedLead(index),
+);
+
+export const leads: Lead[] = [...featuredLeads, ...generatedLeads];
 
 export const sortLeadsByNewest = (leadList: Lead[]): Lead[] => {
   return leadList.toSorted(

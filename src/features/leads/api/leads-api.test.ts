@@ -9,6 +9,10 @@ const exactLeadKeys = ["createdAt", "email", "id", "message", "name", "phone"];
 const exactLeadActivityKeys = ["createdAt", "id", "leadId", "note", "type"];
 
 describe("lead MSW API mock", () => {
+  it("provides a realistic mock lead volume", () => {
+    expect(leads).toHaveLength(150);
+  });
+
   it("serves a paginated lead list through the /api/leads mock endpoint", async () => {
     const result = await getLeads({ page: 2, pageSize: 5 });
     const expectedLeads = sortLeadsByNewest(leads).slice(5, 10);
