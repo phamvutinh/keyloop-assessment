@@ -1,5 +1,9 @@
+import { Navigate } from "react-router";
+
+import { paths } from "@/config/paths";
+
 const LandingRoute = () => {
-  return <h1>Sales Lead Management</h1>;
+  return <Navigate to={paths.leads.path} replace />;
 };
 
 export default LandingRoute;
