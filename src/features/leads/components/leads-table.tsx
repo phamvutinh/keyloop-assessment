@@ -12,6 +12,78 @@ type LeadsTableProps = {
   onPaginationChange: OnChangeFn<PaginationState>;
 };
 
+type PaginationItem = number | "ellipsis-start" | "ellipsis-end";
+
+const boundaryPageCount = 2;
+const siblingPageCount = 1;
+const maxNumberedPageCount = 7;
+
+const getCondensedPageItems = (
+  currentPageIndex: number,
+  pageCount: number,
+): PaginationItem[] => {
+  if (pageCount <= maxNumberedPageCount) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  const currentPageNumber = currentPageIndex + 1;
+  const visiblePageNumbers = new Set<number>();
+
+  for (let pageNumber = 1; pageNumber <= boundaryPageCount; pageNumber += 1) {
+    visiblePageNumbers.add(pageNumber);
+  }
+
+  for (
+    let pageNumber = pageCount - boundaryPageCount + 1;
+    pageNumber <= pageCount;
+    pageNumber += 1
+  ) {
+    visiblePageNumbers.add(pageNumber);
+  }
+
+  const siblingStart = Math.max(
+    boundaryPageCount + 1,
+    currentPageNumber - siblingPageCount,
+  );
+  const siblingEnd = Math.min(
+    pageCount - boundaryPageCount,
+    currentPageNumber + siblingPageCount,
+  );
+
+  for (
+    let pageNumber = siblingStart;
+    pageNumber <= siblingEnd;
+    pageNumber += 1
+  ) {
+    visiblePageNumbers.add(pageNumber);
+  }
+
+  const sortedPageNumbers = [...visiblePageNumbers].toSorted(
+    (left, right) => left - right,
+  );
+
+  return sortedPageNumbers.reduce<PaginationItem[]>((items, pageNumber) => {
+    const previousItem = items.at(-1);
+
+    if (typeof previousItem === "number") {
+      const gap = pageNumber - previousItem;
+
+      if (gap === 2) {
+        items.push(previousItem + 1);
+      }
+
+      if (gap > 2) {
+        items.push(
+          previousItem < currentPageNumber ? "ellipsis-start" : "ellipsis-end",
+        );
+      }
+    }
+
+    items.push(pageNumber);
+    return items;
+  }, []);
+};
+
 export const LeadsTable = ({
   leads,
   pagination,
@@ -30,6 +102,10 @@ export const LeadsTable = ({
 
   const currentPageIndex = table.state.pagination.pageIndex;
   const paginatedLeadCount = table.getRowModel().rows.length;
+  const pageItems = getCondensedPageItems(
+    currentPageIndex,
+    table.getPageCount(),
+  );
 
   return (
     <>
@@ -80,19 +156,27 @@ export const LeadsTable = ({
           >
             ‹
           </button>
-          {table.getPageOptions().map((pageIndex) => {
-            const pageNumber = pageIndex + 1;
+          {pageItems.map((item) => {
+            if (typeof item === "string") {
+              return (
+                <span key={item} className="page-ellipsis" aria-hidden="true">
+                  ...
+                </span>
+              );
+            }
+
+            const pageIndex = item - 1;
             const isCurrentPage = pageIndex === currentPageIndex;
 
             return (
               <button
-                key={pageNumber}
+                key={item}
                 className="page-button"
                 type="button"
                 aria-current={isCurrentPage ? "page" : undefined}
                 onClick={() => table.setPageIndex(pageIndex)}
               >
-                {pageNumber}
+                {item}
               </button>
             );
           })}

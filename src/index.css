@@ -349,17 +349,25 @@
     gap: 5px;
   }
 
-  .page-button {
+  .page-button,
+  .page-ellipsis {
     display: grid;
     min-width: 28px;
     height: 28px;
     place-items: center;
+    font-size: 11px;
+  }
+
+  .page-button {
     border: 1px solid transparent;
     border-radius: 7px;
     background: transparent;
     color: #666b72;
     cursor: pointer;
-    font-size: 11px;
+  }
+
+  .page-ellipsis {
+    color: #81858b;
   }
 
   .page-button:hover,

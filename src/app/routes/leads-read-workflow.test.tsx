@@ -144,8 +144,25 @@ describe("lead browse and read workflow", () => {
 
     expect(screen.queryByText("3 sample leads")).not.toBeInTheDocument();
     expect(screen.getByText("Showing 10 of 150 leads")).toBeInTheDocument();
+    const pagination = screen.getByRole("navigation", {
+      name: "Lead list pagination",
+    });
+    expect(pagination).toBeInTheDocument();
     expect(
-      screen.getByRole("navigation", { name: "Lead list pagination" }),
+      within(pagination).getByRole("button", { name: "1" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      within(pagination).getByRole("button", { name: "2" }),
+    ).toBeInTheDocument();
+    expect(
+      within(pagination).queryByRole("button", { name: "3" }),
+    ).not.toBeInTheDocument();
+    expect(within(pagination).getByText("...")).toBeInTheDocument();
+    expect(
+      within(pagination).getByRole("button", { name: "14" }),
+    ).toBeInTheDocument();
+    expect(
+      within(pagination).getByRole("button", { name: "15" }),
     ).toBeInTheDocument();
 
     for (const column of ["Customer", "Contact", "Inquiry", "Received"]) {

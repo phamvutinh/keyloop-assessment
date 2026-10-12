@@ -108,7 +108,4 @@ My workflow:
 - Split the work around the Scenario C flows: lead list, lead detail, activity history, and follow-up recording.
 - Used `AGENTS.md`, `DESIGN.md`, and `reference_HTML.html` to keep implementation and UI decisions aligned with the repository guidance.
 - Asked AI for help with implementation, refactoring, tests, and documentation, then checked the result with linting, tests, formatting checks, and builds.
-- Corrected important scope and design issues during the process, including removing the out-of-scope lead status field, centralizing follow-up validation, adding recovery for malformed localStorage data, and splitting the Lead Detail route into smaller feature components.
-
-The project has been checked during development with `npm run lint`, `npm test`, `npm run format:check`, and `npm run build`.
-
+- Corrected important scope and design issues during the process, including removing the out-of-scope lead status field, centralizing follow-up validation, adding recovery for malformed localStorage data, splitting the Lead Detail route into smaller feature components, and condensing long lead-list pagination into boundary pages with an ellipsis.
