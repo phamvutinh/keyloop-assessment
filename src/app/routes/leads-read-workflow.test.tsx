@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import LeadDetailRoute from "@/app/routes/lead-detail";
 import LandingRoute from "@/app/routes/landing";
@@ -11,13 +12,13 @@ import {
   getActivitiesForLead,
 } from "@/features/activity/data";
 import { leads } from "@/features/leads/data";
-import type { Lead, LeadListResponse, LeadStatus } from "@/types/api";
+import type { Lead, LeadListResponse } from "@/types/api";
 import { formatDateTime } from "@/utils/format";
-import { getLeadStatusLabel } from "@/utils/lead";
 
 const mocks = vi.hoisted(() => ({
   useLeads: vi.fn(),
   useLead: vi.fn(),
+  useActivities: vi.fn(),
 }));
 
 vi.mock("@/features/leads/api/get-leads", () => ({
@@ -26,6 +27,10 @@ vi.mock("@/features/leads/api/get-leads", () => ({
 
 vi.mock("@/features/leads/api/get-lead", () => ({
   useLead: mocks.useLead,
+}));
+
+vi.mock("@/features/activity/api/get-activities", () => ({
+  useActivities: mocks.useActivities,
 }));
 
 const successfulQuery = <T,>(data: T) => ({
@@ -37,21 +42,45 @@ const successfulQuery = <T,>(data: T) => ({
   refetch: vi.fn(),
 });
 
+const successfulActivitiesQuery = (activities = fixtureActivities) => ({
+  data: {
+    pages: [{ items: activities, nextCursor: null }],
+    pageParams: [null],
+  },
+  error: null,
+  isError: false,
+  isPending: false,
+  isSuccess: true,
+  hasNextPage: false,
+  isFetchingNextPage: false,
+  fetchNextPage: vi.fn(),
+  refetch: vi.fn(),
+});
+
+beforeEach(() => {
+  mocks.useActivities.mockReturnValue(successfulActivitiesQuery());
+});
+
 const getLeadListPage = ({
   sourceLeads,
   page,
   pageSize,
-  status,
+  search = "",
 }: {
   sourceLeads: Lead[];
   page: number;
   pageSize: number;
-  status?: LeadStatus;
+  search?: string;
 }): LeadListResponse => {
+  const normalizedSearch = search.trim().toLowerCase();
   const matchingLeads = sourceLeads
-    .filter((lead) => !status || lead.status === status)
     .toSorted(
       (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+    )
+    .filter((lead) =>
+      normalizedSearch
+        ? lead.name.toLowerCase().includes(normalizedSearch)
+        : true,
     );
   const startIndex = (page - 1) * pageSize;
 
@@ -67,8 +96,8 @@ const successfulLeadListQuery = (
   sourceLeads: Lead[],
   page = 1,
   pageSize = 10,
-  status?: LeadStatus,
-) => successfulQuery(getLeadListPage({ sourceLeads, page, pageSize, status }));
+  search = "",
+) => successfulQuery(getLeadListPage({ sourceLeads, page, pageSize, search }));
 
 const makeLead = (index: number): Lead => ({
   id: `lead-page-${index}`,
@@ -76,19 +105,24 @@ const makeLead = (index: number): Lead => ({
   email: `page.lead.${index}@example.com`,
   phone: `+44 20 7000 ${index.toString().padStart(4, "0")}`,
   message: `Pagination fixture lead ${index}`,
-  status: "new",
   createdAt: `2026-02-${index.toString().padStart(2, "0")}T09:00:00.000Z`,
 });
 
 const renderRoutes = (initialEntry = "/leads") => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/" element={<LandingRoute />} />
-        <Route path="/leads" element={<LeadsRoute />} />
-        <Route path="/leads/:leadId" element={<LeadDetailRoute />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route path="/" element={<LandingRoute />} />
+          <Route path="/leads" element={<LeadsRoute />} />
+          <Route path="/leads/:leadId" element={<LeadDetailRoute />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 };
 
@@ -99,7 +133,7 @@ describe("lead browse and read workflow", () => {
     renderRoutes("/");
 
     expect(
-      await screen.findByRole("heading", { name: "All Leads" }),
+      await screen.findByRole("heading", { name: "Lead list" }),
     ).toBeInTheDocument();
   });
 
@@ -114,13 +148,7 @@ describe("lead browse and read workflow", () => {
       screen.getByRole("navigation", { name: "Lead list pagination" }),
     ).toBeInTheDocument();
 
-    for (const column of [
-      "Customer",
-      "Contact",
-      "Status",
-      "Inquiry",
-      "Received",
-    ]) {
+    for (const column of ["Customer", "Contact", "Inquiry", "Received"]) {
       expect(
         screen.getByRole("columnheader", { name: column }),
       ).toBeInTheDocument();
@@ -150,7 +178,6 @@ describe("lead browse and read workflow", () => {
       if (lead.phone) {
         expect(row).toHaveTextContent(lead.phone);
       }
-      expect(row).toHaveTextContent(getLeadStatusLabel(lead.status));
       expect(row).toHaveTextContent(lead.message.slice(0, 80));
       expect(row).toHaveTextContent(formatDateTime(lead.createdAt));
     });
@@ -158,6 +185,38 @@ describe("lead browse and read workflow", () => {
     expect(
       screen.queryByText(/company|service|pipeline|last contact|view details/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("searches lead names through the lead list API", async () => {
+    const user = userEvent.setup();
+    mocks.useLeads.mockImplementation(({ page, pageSize, search }) =>
+      successfulLeadListQuery(leads, page, pageSize, search),
+    );
+
+    renderRoutes();
+
+    const searchInput = screen.getByRole("searchbox", {
+      name: "Search by lead name",
+    });
+    expect(screen.getByText("Showing 10 of 12 leads")).toBeInTheDocument();
+
+    await user.type(searchInput, "Anna");
+
+    expect(mocks.useLeads).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, pageSize: 10, search: "Anna" }),
+    );
+    expect(screen.getByText("Showing 1 of 1 leads")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Anna Reed/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Marcus Chen/ }),
+    ).not.toBeInTheDocument();
+
+    await user.clear(searchInput);
+    await user.type(searchInput, "Unknown lead");
+
+    expect(
+      screen.getByRole("heading", { name: "No matching leads" }),
+    ).toBeInTheDocument();
   });
 
   it("paginates the lead table", async () => {
@@ -200,33 +259,9 @@ describe("lead browse and read workflow", () => {
     ).toBeInTheDocument();
   });
 
-  it("filters the lead table by status", async () => {
-    const user = userEvent.setup();
-    mocks.useLeads.mockImplementation(({ page, pageSize, status }) =>
-      successfulLeadListQuery(leads, page, pageSize, status),
-    );
-
-    renderRoutes();
-
-    await user.selectOptions(screen.getByRole("combobox"), "contacted");
-
-    expect(screen.getByText("Showing 4 of 4 leads")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Marcus Chen/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: /Anna Reed/ }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: /Priya Shah/ }),
-    ).not.toBeInTheDocument();
-  });
-
   it("opens a directly addressable lead detail route with exact fields and null contacts", () => {
     const lead = leads[2];
-    mocks.useLead.mockReturnValue(
-      successfulQuery({ ...lead, activities: getActivitiesForLead(lead.id) }),
-    );
+    mocks.useLead.mockReturnValue(successfulQuery(lead));
 
     renderRoutes(`/leads/${lead.id}`);
 
@@ -235,9 +270,6 @@ describe("lead browse and read workflow", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(lead.email!)).toBeInTheDocument();
     expect(screen.getByText("Not provided")).toBeInTheDocument();
-    expect(screen.getAllByText(getLeadStatusLabel(lead.status))).toHaveLength(
-      2,
-    );
     expect(screen.getByText(lead.message)).toBeInTheDocument();
     expect(
       screen.getByText(formatDateTime(lead.createdAt)),
@@ -248,7 +280,8 @@ describe("lead browse and read workflow", () => {
   it("shows activity notes newest first with recording times", () => {
     const lead = leads[0];
     const activities = getActivitiesForLead(lead.id);
-    mocks.useLead.mockReturnValue(successfulQuery({ ...lead, activities }));
+    mocks.useLead.mockReturnValue(successfulQuery(lead));
+    mocks.useActivities.mockReturnValue(successfulActivitiesQuery(activities));
 
     renderRoutes(`/leads/${lead.id}`);
 
@@ -269,6 +302,45 @@ describe("lead browse and read workflow", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("requests the alternate backend activity sort when the sort button is clicked", async () => {
+    const user = userEvent.setup();
+    const lead = leads[0];
+    const newestActivities = getActivitiesForLead(lead.id, "newest");
+    const oldestActivities = getActivitiesForLead(lead.id, "oldest");
+
+    mocks.useLead.mockReturnValue(successfulQuery(lead));
+    mocks.useActivities.mockImplementation(({ activitySort }) =>
+      successfulActivitiesQuery(
+        activitySort === "oldest" ? oldestActivities : newestActivities,
+      ),
+    );
+
+    renderRoutes(`/leads/${lead.id}`);
+
+    expect(screen.getByText("Newest first")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /sort activity history oldest first/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mocks.useActivities).toHaveBeenLastCalledWith(
+        expect.objectContaining({ activitySort: "oldest" }),
+      );
+    });
+    expect(screen.getByText("Oldest first")).toBeInTheDocument();
+
+    const history = screen
+      .getByRole("heading", { name: "Activity history" })
+      .closest("article");
+    expect(history).not.toBeNull();
+    expect(within(history!).getAllByRole("listitem")[0]).toHaveTextContent(
+      oldestActivities[0].note,
+    );
+  });
+
   it("shows useful empty-list, empty-history, and unknown-lead states", async () => {
     const user = userEvent.setup();
     mocks.useLeads.mockReturnValue(successfulLeadListQuery([]));
@@ -281,7 +353,8 @@ describe("lead browse and read workflow", () => {
     emptyList.unmount();
 
     const lead = leads[1];
-    mocks.useLead.mockReturnValue(successfulQuery({ ...lead, activities: [] }));
+    mocks.useLead.mockReturnValue(successfulQuery(lead));
+    mocks.useActivities.mockReturnValue(successfulActivitiesQuery([]));
     const emptyHistory = renderRoutes(`/leads/${lead.id}`);
 
     expect(
@@ -303,7 +376,7 @@ describe("lead browse and read workflow", () => {
 });
 
 describe("lead read boundary", () => {
-  it("uses the approved exact Lead and LeadActivity contracts", () => {
+  it("uses the exact Lead and typed LeadActivity contracts", () => {
     expect(Object.keys(leads[0]).sort()).toEqual([
       "createdAt",
       "email",
@@ -311,23 +384,32 @@ describe("lead read boundary", () => {
       "message",
       "name",
       "phone",
-      "status",
     ]);
     expect(Object.keys(fixtureActivities[0]).sort()).toEqual([
       "createdAt",
       "id",
       "leadId",
       "note",
+      "type",
     ]);
   });
 
-  it("keeps activity history associated to the correct lead", () => {
-    const annaHistory = getActivitiesForLead("lead-anna-reed");
+  it("keeps seeded activity history associated to every lead", () => {
+    const annaHistory = getActivitiesForLead(leads[0].id);
 
-    expect(annaHistory).toHaveLength(2);
+    expect(annaHistory).toHaveLength(6);
     expect(
-      annaHistory.every((activity) => activity.leadId === "lead-anna-reed"),
+      annaHistory.every((activity) => activity.leadId === leads[0].id),
     ).toBe(true);
-    expect(getActivitiesForLead("lead-priya-shah")).toEqual([]);
+    expect(
+      leads.every((lead) =>
+        getActivitiesForLead(lead.id).every(
+          (activity) => activity.leadId === lead.id,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      leads.every((lead) => getActivitiesForLead(lead.id).length > 0),
+    ).toBe(true);
   });
 });

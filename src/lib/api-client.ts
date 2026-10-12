@@ -68,6 +68,15 @@ const getErrorMessage = (data: unknown, fallback: string) => {
   return fallback;
 };
 
+const getRouteTemplate = (url: string) => {
+  const path = new URL(url).pathname;
+  if (/\/leads$/.test(path)) return "/leads";
+  if (/\/leads\/[^/]+\/activities$/.test(path))
+    return "/leads/:leadId/activities";
+  if (/\/leads\/[^/]+$/.test(path)) return "/leads/:leadId";
+  return "/other";
+};
+
 const request = async <TResponse>(
   endpoint: string,
   options: ApiClientOptions = {},
@@ -81,24 +90,37 @@ const request = async <TResponse>(
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(buildUrl(endpoint, params), {
-    credentials: "include",
-    ...init,
-    headers: requestHeaders,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const url = buildUrl(endpoint, params);
+  const startedAt = performance.now();
+  let status: number | null = null;
 
-  const data = await parseResponse(response);
+  try {
+    const response = await fetch(url, {
+      credentials: "include",
+      ...init,
+      headers: requestHeaders,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    status = response.status;
+    const data = await parseResponse(response);
 
-  if (!response.ok) {
-    throw new ApiError(
-      getErrorMessage(data, response.statusText),
-      response.status,
-      data,
-    );
+    if (!response.ok) {
+      throw new ApiError(
+        getErrorMessage(data, response.statusText),
+        response.status,
+        data,
+      );
+    }
+
+    return data as TResponse;
+  } finally {
+    console.info("api.request", {
+      method: init.method ?? "GET",
+      route: getRouteTemplate(url),
+      status,
+      durationMs: Math.round(performance.now() - startedAt),
+    });
   }
-
-  return data as TResponse;
 };
 
 export const api = {

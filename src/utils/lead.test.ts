@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getInitials, getInquiryExcerpt, getLeadStatusLabel } from "./lead";
+import { getInitials, getInquiryExcerpt } from "./lead";
 
 describe("lead utilities", () => {
   it("builds initials from the first two name parts", () => {
@@ -16,11 +16,5 @@ describe("lead utilities", () => {
     const message = `${"a".repeat(117)} trailing text`;
 
     expect(getInquiryExcerpt(message)).toBe(`${"a".repeat(117)}…`);
-  });
-
-  it("formats lead status labels", () => {
-    expect(getLeadStatusLabel("new")).toBe("New");
-    expect(getLeadStatusLabel("contacted")).toBe("Contacted");
-    expect(getLeadStatusLabel("closed")).toBe("Closed");
   });
 });

@@ -4,29 +4,28 @@ import { api } from "@/lib/api-client";
 import type { QueryConfig } from "@/lib/react-query";
 import type { LeadDetails } from "@/types/api";
 
-export const getLead = async ({
-  leadId,
-}: {
+export type GetLeadParams = {
   leadId: string;
-}): Promise<LeadDetails | null> => {
-  return api.get<LeadDetails | null>(`/leads/${leadId}`);
 };
 
-export const getLeadQueryOptions = (leadId: string) => {
-  return queryOptions({
+export const getLead = async ({
+  leadId,
+}: GetLeadParams): Promise<LeadDetails | null> =>
+  api.get<LeadDetails | null>(`/leads/${leadId}`);
+
+export const getLeadQueryOptions = ({ leadId }: GetLeadParams) =>
+  queryOptions({
     queryKey: ["lead", leadId],
     queryFn: () => getLead({ leadId }),
   });
-};
 
-type UseLeadOptions = {
-  leadId: string;
+type UseLeadOptions = GetLeadParams & {
   queryConfig?: QueryConfig<typeof getLeadQueryOptions>;
 };
 
-export const useLead = ({ leadId, queryConfig }: UseLeadOptions) => {
+export const useLead = ({ queryConfig, ...params }: UseLeadOptions) => {
   return useQuery({
-    ...getLeadQueryOptions(leadId),
+    ...getLeadQueryOptions(params),
     ...queryConfig,
   });
 };

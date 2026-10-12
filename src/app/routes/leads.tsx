@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import type { PaginationState } from "@tanstack/react-table";
 
 import { ApiError } from "@/components/errors/api-error";
@@ -6,55 +6,45 @@ import { RouteError } from "@/components/errors/route-error";
 import { AppShell } from "@/components/layout/app-shell";
 import { useLeads } from "@/features/leads/api/get-leads";
 import { LeadsTable } from "@/features/leads/components/leads-table";
-import { leadStatuses, type LeadStatus } from "@/types/api";
-import { getLeadStatusLabel } from "@/utils/lead";
 
 const LEADS_PER_PAGE = 10;
 
 const LeadsRoute = () => {
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | "">("");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: LEADS_PER_PAGE,
   });
+  const [search, setSearch] = useState("");
+  const normalizedSearch = search.trim();
+  const hasSearch = normalizedSearch.length > 0;
   const leadsQuery = useLeads({
     page: pagination.pageIndex + 1,
     pageSize: pagination.pageSize,
-    status: statusFilter || undefined,
+    search: normalizedSearch,
   });
   const leadList = leadsQuery.data;
   const leads = leadList?.items ?? [];
 
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearch(event.target.value);
+    setPagination((current) => ({ ...current, pageIndex: 0 }));
+  };
+
   return (
     <AppShell current="Manage Leads">
-      <div className="page-heading">
-        <div>
-          <h1>All Leads</h1>
-        </div>
-      </div>
-
       <section className="lead-panel" aria-labelledby="leadListTitle">
         <div className="panel-toolbar">
           <h2 className="panel-title" id="leadListTitle">
             Lead list
           </h2>
-          <div className="table-tools" aria-label="List tools">
-            <label className="status-filter-field">
-              <select
-                value={statusFilter}
-                onChange={(event) => {
-                  setStatusFilter(event.target.value as LeadStatus | "");
-                  setPagination((current) => ({ ...current, pageIndex: 0 }));
-                }}
-              >
-                <option value="">All statuses</option>
-                {leadStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {getLeadStatusLabel(status)}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="lead-search-field">
+            <input
+              type="search"
+              value={search}
+              onChange={handleSearchChange}
+              placeholder="Search by lead name"
+              aria-label="Search by lead name"
+            />
           </div>
         </div>
 
@@ -77,10 +67,13 @@ const LeadsRoute = () => {
 
         {leadsQuery.isSuccess && leads.length === 0 ? (
           <div className="empty-card m-4">
-            <h2 className="mb-2 text-xl font-semibold">No leads to review</h2>
+            <h2 className="mb-2 text-xl font-semibold">
+              {hasSearch ? "No matching leads" : "No leads to review"}
+            </h2>
             <p className="mb-0 text-secondary">
-              There are no sample website inquiries available right now. Return
-              to this page after seeded leads are available.
+              {hasSearch
+                ? "Try another lead name or clear the search input."
+                : "There are no sample website inquiries available right now. Return to this page after seeded leads are available."}
             </p>
           </div>
         ) : null}

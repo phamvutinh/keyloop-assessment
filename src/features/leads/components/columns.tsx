@@ -6,13 +6,7 @@ import {
 } from "@tanstack/react-table";
 import type { Lead } from "@/types/api";
 
-import {
-  ContactCell,
-  CustomerCell,
-  InquiryCell,
-  ReceivedCell,
-  StatusCell,
-} from "./cells";
+import { ContactCell, CustomerCell, InquiryCell, ReceivedCell } from "./cells";
 
 export const features = tableFeatures({
   rowPaginationFeature,
@@ -32,10 +26,6 @@ export const columns = columnHelper.columns([
     id: "contact",
     header: "Contact",
     cell: ({ row }) => <ContactCell lead={row.original} />,
-  }),
-  columnHelper.accessor("status", {
-    header: "Status",
-    cell: ({ getValue }) => <StatusCell status={getValue()} />,
   }),
   columnHelper.accessor("message", {
     header: "Inquiry",

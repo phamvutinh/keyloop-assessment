@@ -1,16 +1,9 @@
-import {
-  ArrowLeftIcon,
-  ChartBarIcon,
-  ChevronDownIcon,
-  InboxIcon,
-  QuestionMarkCircleIcon,
-  SparklesIcon,
-  Squares2X2Icon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { ComponentType, ReactNode, SVGProps } from "react";
 
+import { Modal } from "@/components/ui/modal";
 import { paths } from "@/config/paths";
 
 type AppShellProps = {
@@ -25,103 +18,74 @@ const Icon = ({ icon: IconComponent }: { icon: OutlineIcon }) => (
   <IconComponent className="hero-icon" aria-hidden="true" />
 );
 
-export const AppShell = ({ children, current, detailName }: AppShellProps) => {
-  return (
-    <div className="app-frame">
-      <aside className="sidebar" aria-label="Primary navigation">
-        <Link
-          className="brand"
-          to={paths.leads.path}
-          aria-label="AI Manager leads"
-        >
-          <span className="brand-mark" aria-hidden="true">
-            <Icon icon={SparklesIcon} />
-          </span>
-          <span className="brand-name">AI Manager</span>
-        </Link>
-        <nav>
-          <section className="nav-section" aria-label="Overview">
-            <div className="nav-heading">
-              <span>Overview</span>
-              <Icon icon={ChevronDownIcon} />
-            </div>
-            <ul className="nav-list">
-              <li>
-                <Link className="nav-link" to={paths.leads.path}>
-                  <Icon icon={Squares2X2Icon} />
-                  <span>Dashboard</span>
-                </Link>
-              </li>
-              <li>
-                <Link className="nav-link" to={paths.leads.path}>
-                  <Icon icon={InboxIcon} />
-                  <span>Inbox</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="nav-link"
-                  to={paths.leads.path}
-                  aria-current="page"
-                >
-                  <Icon icon={UsersIcon} />
-                  <span>Manage Leads</span>
-                </Link>
-              </li>
-            </ul>
-          </section>
-          <section className="nav-section" aria-label="Tools">
-            <div className="nav-heading">
-              <span>Tools</span>
-              <Icon icon={ChevronDownIcon} />
-            </div>
-            <ul className="nav-list">
-              <li>
-                <Link className="nav-link" to={paths.leads.path}>
-                  <Icon icon={ChartBarIcon} />
-                  <span>Analytics</span>
-                </Link>
-              </li>
-              <li>
-                <Link className="nav-link" to={paths.leads.path}>
-                  <Icon icon={QuestionMarkCircleIcon} />
-                  <span>Support</span>
-                </Link>
-              </li>
-            </ul>
-          </section>
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="profile">
-            <span className="profile-avatar" aria-hidden="true">
-              D
-            </span>
-            <span>
-              <span className="profile-name">David</span>
-              <span className="profile-role">Admin</span>
-            </span>
-          </div>
-        </div>
-      </aside>
+const isEditableTarget = (target: EventTarget | null) => {
+  return target instanceof HTMLElement
+    ? Boolean(target.closest("input, textarea, select, [contenteditable]"))
+    : false;
+};
 
-      <main className="main" id="top">
-        <header className="topbar">
-          <div className="breadcrumbs">
+export const AppShell = ({ children, current, detailName }: AppShellProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        !(event.metaKey || event.ctrlKey) ||
+        event.key.toLowerCase() !== "k"
+      ) {
+        return;
+      }
+
+      if (isEditableTarget(event.target)) return;
+
+      event.preventDefault();
+      setIsModalOpen(true);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  return (
+    <>
+      <div className="app-frame w-full max-w-full">
+        <main className="main" id="top">
+          <header className="topbar">
             <Link
-              className="back-button"
+              className="brand"
               to={paths.leads.path}
-              aria-label="Back to leads"
-              hidden={!detailName}
+              aria-label="AI Manager leads"
             >
-              <Icon icon={ArrowLeftIcon} />
+              <span className="brand-mark" aria-hidden="true">
+                <Icon icon={SparklesIcon} />
+              </span>
+              <span className="brand-name">AI Manager</span>
             </Link>
-            <span>Overview</span>
-            <span aria-hidden="true">/</span>
-            <strong>{detailName ?? current}</strong>
-          </div>
-        </header>
-        <div className="content">{children}</div>
-      </main>
-    </div>
+            <div className="breadcrumbs">
+              <Link
+                className="back-button"
+                to={paths.leads.path}
+                aria-label="Back to leads"
+                hidden={!detailName}
+              >
+                <Icon icon={ArrowLeftIcon} />
+              </Link>
+              <span>Overview</span>
+              <span aria-hidden="true">/</span>
+              <strong>{detailName ?? current}</strong>
+            </div>
+          </header>
+          <div className="content">{children}</div>
+        </main>
+      </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        title="Modal"
+        onClose={() => setIsModalOpen(false)}
+      >
+        <p className="m-0 text-secondary">URL will be added here.</p>
+      </Modal>
+    </>
   );
 };

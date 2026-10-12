@@ -1,48 +1,78 @@
-import {
-  ArrowLeftIcon,
-  ChatBubbleLeftRightIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
-import type { ComponentType, SVGProps } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/components/errors/api-error";
 import { RouteError } from "@/components/errors/route-error";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { paths } from "@/config/paths";
+import { ActivityRecoveryCard } from "@/features/activity/components/activity-recovery-card";
+import { ActivityTimeline } from "@/features/activity/components/activity-timeline";
+import {
+  FollowUpModal,
+  type FollowUpInput,
+} from "@/features/activity/components/follow-up-modal";
+import { useActivities } from "@/features/activity/api/get-activities";
+import { useSaveFollowUp } from "@/features/activity/api/save-follow-up";
 import { useLead } from "@/features/leads/api/get-lead";
+import { ContactValue } from "@/features/leads/components/contact-value";
+import type { ActivitySort } from "@/types/api";
 import { formatDateTime } from "@/utils/format";
-import { getInitials, getLeadStatusLabel } from "@/utils/lead";
-
-const ContactValue = ({ value }: { value: string | null }) => {
-  return <>{value ?? "Not provided"}</>;
-};
-
-type OutlineIcon = ComponentType<SVGProps<SVGSVGElement>>;
-
-const DetailAction = ({
-  icon: Icon,
-  label,
-}: {
-  icon: OutlineIcon;
-  label: string;
-}) => (
-  <button className="detail-action" type="button">
-    <Icon className="hero-icon" aria-hidden="true" />
-    <span>{label}</span>
-  </button>
-);
+import { getInitials } from "@/utils/lead";
 
 const LeadDetailRoute = () => {
   const { leadId } = useParams();
+  const queryClient = useQueryClient();
+  const [successMessage, setSuccessMessage] = useState("");
+  const [activitySort, setActivitySort] = useState<ActivitySort>("newest");
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
   const leadQuery = useLead({
     leadId: leadId ?? "",
     queryConfig: { enabled: Boolean(leadId) },
   });
+  const activitiesQuery = useActivities({
+    leadId: leadId ?? "",
+    activitySort,
+    queryConfig: { enabled: Boolean(leadId) },
+  });
+  const saveFollowUp = useSaveFollowUp({
+    mutationConfig: {
+      onSuccess: async (_activity, variables) => {
+        await queryClient.cancelQueries({
+          queryKey: ["leadActivities", variables.leadId],
+        });
+        await queryClient.resetQueries({
+          queryKey: ["leadActivities", variables.leadId],
+        });
+        setSuccessMessage("Follow-up note saved.");
+        setIsFollowUpModalOpen(false);
+      },
+    },
+  });
   const lead = leadQuery.data;
+  const activities = Array.from(
+    new Map(
+      (activitiesQuery.data?.pages.flatMap((page) => page.items) ?? []).map(
+        (activity) => [activity.id, activity],
+      ),
+    ).values(),
+  );
+
+  const handleSaveFollowUp = async ({ type, note }: FollowUpInput) => {
+    if (!leadId) {
+      return false;
+    }
+
+    setSuccessMessage("");
+
+    try {
+      await saveFollowUp.mutateAsync({ leadId, type, note });
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   return (
     <AppShell current="Manage Leads" detailName={lead?.name ?? "Lead details"}>
@@ -60,11 +90,18 @@ const LeadDetailRoute = () => {
       {leadQuery.isError ? (
         <ApiError
           error={leadQuery.error}
-          title="Unable to load lead"
+          title="Unable to load lead details"
           action={{
             label: "Try again",
             onClick: () => void leadQuery.refetch(),
           }}
+        />
+      ) : null}
+
+      {activitiesQuery.isError && activities.length === 0 ? (
+        <ActivityRecoveryCard
+          error={activitiesQuery.error}
+          onRetry={() => void activitiesQuery.refetch()}
         />
       ) : null}
 
@@ -82,52 +119,29 @@ const LeadDetailRoute = () => {
       ) : null}
 
       {leadQuery.isSuccess && lead ? (
-        <section className="detail-page" aria-labelledby="detailTitle">
-          <header className="detail-header">
-            <Button
-              asChild
-              variant="secondary"
-              size="sm"
-              icon={<ArrowLeftIcon aria-hidden="true" />}
-            >
-              <Link to={paths.leads.path}>Back to leads</Link>
-            </Button>
-            <div className="detail-heading">
-              <span className="detail-kicker">Lead profile</span>
-              <h1 id="detailTitle">Lead details</h1>
-            </div>
-          </header>
-
+        <section className="detail-page" aria-labelledby="detailLeadName">
           <section className="detail-identity" aria-labelledby="detailLeadName">
-            <span className="avatar detail-avatar" aria-hidden="true">
-              {getInitials(lead.name)}
-            </span>
-            <div className="detail-identity-copy">
-              <div className="detail-identity-top">
-                <span className="status">
-                  {getLeadStatusLabel(lead.status)}
-                </span>
-              </div>
-              <h2 className="detail-name" id="detailLeadName">
-                {lead.name}
-              </h2>
-              <p className="detail-company">Website inquiry</p>
-              <p className="detail-description">
-                Review contact details, inquiry timing, and recent follow-up
-                history for this lead.
-              </p>
-              <div className="detail-actions" aria-label="Lead actions">
-                <DetailAction icon={PhoneIcon} label="Call" />
-                <DetailAction icon={ChatBubbleLeftRightIcon} label="Message" />
-                <DetailAction icon={EnvelopeIcon} label="Email" />
+            <div className="detail-identity-summary">
+              <span className="avatar detail-avatar" aria-hidden="true">
+                {getInitials(lead.name)}
+              </span>
+              <div className="detail-identity-copy">
+                <h2 className="detail-name" id="detailLeadName">
+                  {lead.name}
+                </h2>
+                <p className="detail-company">Website inquiry</p>
+                <p className="detail-description">
+                  Review contact details, inquiry timing, and recent follow-up
+                  history for this lead.
+                </p>
               </div>
             </div>
-          </section>
-
-          <div className="detail-layout">
-            <article className="detail-card">
+            <section
+              className="detail-identity-fields"
+              aria-labelledby="detailFieldsTitle"
+            >
               <div className="detail-section-heading">
-                <h2>Inquiry details</h2>
+                <h2 id="detailFieldsTitle">Full details</h2>
                 <span className="demo-tag">Sample record</span>
               </div>
               <dl className="detail-grid-list">
@@ -151,66 +165,50 @@ const LeadDetailRoute = () => {
                     </time>
                   </dd>
                 </div>
-                <div className="detail-field">
-                  <dt>Status</dt>
-                  <dd>{getLeadStatusLabel(lead.status)}</dd>
-                </div>
                 <div className="detail-field detail-field-wide">
                   <dt>Message</dt>
                   <dd>{lead.message}</dd>
                 </div>
               </dl>
-            </article>
+            </section>
+          </section>
 
-            <article className="detail-card">
-              <div className="detail-section-heading">
-                <h2>Activity history</h2>
-                <span className="demo-tag">Newest first</span>
-              </div>
-              {lead.activities.length > 0 ? (
-                <ol className="timeline-list">
-                  {lead.activities.map((activity, index) => {
-                    const Icon =
-                      index === 0 ? ChatBubbleLeftRightIcon : PhoneIcon;
-
-                    return (
-                      <li key={activity.id} className="timeline-item">
-                        <span className="timeline-marker" aria-hidden="true">
-                          <Icon className="hero-icon" />
-                        </span>
-                        <div className="timeline-copy">
-                          <div className="timeline-meta">
-                            <strong className="timeline-title">
-                              Follow-up note
-                            </strong>
-                            <time
-                              className="timeline-time"
-                              dateTime={activity.createdAt}
-                            >
-                              {formatDateTime(activity.createdAt)}
-                            </time>
-                          </div>
-                          <p>{activity.note}</p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              ) : (
-                <div className="timeline-empty">
-                  <span className="timeline-marker" aria-hidden="true">
-                    <PlusIcon className="hero-icon" />
-                  </span>
-                  <p>
-                    No activity has been recorded for this lead yet. Return to
-                    the lead list to review another inquiry.
-                  </p>
-                </div>
-              )}
-            </article>
+          <div className="detail-layout">
+            <ActivityTimeline
+              activities={activities}
+              activitySort={activitySort}
+              successMessage={successMessage}
+              isLoading={activitiesQuery.isPending}
+              isSaving={saveFollowUp.isPending}
+              onToggleSort={() =>
+                setActivitySort((current) =>
+                  current === "newest" ? "oldest" : "newest",
+                )
+              }
+              onAddFollowUp={() => {
+                setSuccessMessage("");
+                saveFollowUp.reset();
+                setIsFollowUpModalOpen(true);
+              }}
+              pagination={{
+                isError: activitiesQuery.isError,
+                hasNextPage: Boolean(activitiesQuery.hasNextPage),
+                isFetchingNextPage: activitiesQuery.isFetchingNextPage,
+                onLoadMore: () => void activitiesQuery.fetchNextPage(),
+              }}
+            />
           </div>
         </section>
       ) : null}
+
+      <FollowUpModal
+        isOpen={isFollowUpModalOpen}
+        isSaving={saveFollowUp.isPending}
+        saveError={saveFollowUp.isError ? saveFollowUp.error.message : ""}
+        onClose={() => setIsFollowUpModalOpen(false)}
+        onSubmit={handleSaveFollowUp}
+        onResetSaveError={saveFollowUp.reset}
+      />
     </AppShell>
   );
 };

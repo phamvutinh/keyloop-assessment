@@ -51,11 +51,16 @@ export const LeadsTable = ({
           <tbody>
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id}>
-                {row.getAllCells().map((cell) => (
-                  <td key={cell.id}>
-                    <table.FlexRender cell={cell} />
-                  </td>
-                ))}
+                {row.getAllCells().map((cell) => {
+                  const header = cell.column.columnDef.header;
+                  const label = typeof header === "string" ? header : undefined;
+
+                  return (
+                    <td key={cell.id} data-label={label}>
+                      <table.FlexRender cell={cell} />
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

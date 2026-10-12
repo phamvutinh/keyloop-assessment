@@ -1,31 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { getActivitiesForLead } from "@/features/activity/data";
+import { getActivities } from "@/features/activity/api/get-activities";
 import { getLead } from "@/features/leads/api/get-lead";
 import { getLeads } from "@/features/leads/api/get-leads";
-import { leads } from "@/features/leads/data";
+import { leads, sortLeadsByNewest } from "@/features/leads/data";
 
-const exactLeadKeys = [
-  "createdAt",
-  "email",
-  "id",
-  "message",
-  "name",
-  "phone",
-  "status",
-];
-
-const exactLeadActivityKeys = ["createdAt", "id", "leadId", "note"];
+const exactLeadKeys = ["createdAt", "email", "id", "message", "name", "phone"];
+const exactLeadActivityKeys = ["createdAt", "id", "leadId", "note", "type"];
 
 describe("lead MSW API mock", () => {
   it("serves a paginated lead list through the /api/leads mock endpoint", async () => {
     const result = await getLeads({ page: 2, pageSize: 5 });
-    const expectedLeads = leads
-      .toSorted(
-        (left, right) =>
-          Date.parse(right.createdAt) - Date.parse(left.createdAt),
-      )
-      .slice(5, 10);
+    const expectedLeads = sortLeadsByNewest(leads).slice(5, 10);
 
     expect(result).toEqual({
       items: expectedLeads,
@@ -36,33 +22,46 @@ describe("lead MSW API mock", () => {
     expect(Object.keys(result.items[0]).sort()).toEqual(exactLeadKeys);
   });
 
-  it("serves filtered lead pages through the /api/leads mock endpoint", async () => {
-    const result = await getLeads({
-      page: 1,
-      pageSize: 10,
-      status: "contacted",
-    });
+  it("filters the paginated lead list by lead name through the mock endpoint", async () => {
+    const result = await getLeads({ page: 1, pageSize: 10, search: "anna" });
 
-    expect(result.total).toBe(4);
-    expect(result.items).toHaveLength(4);
-    expect(result.items.every((lead) => lead.status === "contacted")).toBe(
-      true,
-    );
+    expect(result.items).toEqual([leads[0]]);
+    expect(result.total).toBe(1);
   });
 
-  it("serves lead details and newest-first activity history through MSW", async () => {
+  it("serves lead details without duplicating activity history", async () => {
     const lead = leads[0];
-    const result = await getLead({ leadId: lead.id });
 
-    expect(result).toEqual({
-      ...lead,
-      activities: getActivitiesForLead(lead.id),
+    await expect(getLead({ leadId: lead.id })).resolves.toEqual(lead);
+  });
+
+  it("serves cursor-paginated activity history without duplicate records", async () => {
+    const lead = leads[0];
+    const firstPage = await getActivities({ leadId: lead.id, limit: 1 });
+    const secondPage = await getActivities({
+      leadId: lead.id,
+      limit: 1,
+      cursor: firstPage.nextCursor,
     });
-    expect(Object.keys(result!.activities[0]).sort()).toEqual(
+
+    expect(Object.keys(firstPage.items[0]).sort()).toEqual(
       exactLeadActivityKeys,
     );
-    expect(Date.parse(result!.activities[0].createdAt)).toBeGreaterThan(
-      Date.parse(result!.activities[1].createdAt),
+    expect(firstPage.nextCursor).not.toBeNull();
+    expect(secondPage.items[0].id).not.toBe(firstPage.items[0].id);
+    expect([...firstPage.items, ...secondPage.items]).toHaveLength(2);
+  });
+
+  it("serves oldest-first activity history when requested", async () => {
+    const lead = leads[0];
+    const result = await getActivities({
+      leadId: lead.id,
+      activitySort: "oldest",
+      limit: 5,
+    });
+
+    expect(Date.parse(result.items[0].createdAt)).toBeLessThan(
+      Date.parse(result.items[1].createdAt),
     );
   });
 

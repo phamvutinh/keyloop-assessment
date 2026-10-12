@@ -41,7 +41,7 @@ type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled"> & {
 };
 
 const baseClasses =
-  "relative inline-flex min-w-0 max-w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border font-medium no-underline transition-[background-color,border-color,color,opacity,transform] active:translate-y-px disabled:pointer-events-none disabled:cursor-default disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:cursor-default aria-disabled:opacity-55";
+  "relative inline-flex min-w-0 max-w-full cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border font-medium no-underline transition-[background-color,border-color,color,opacity,transform] active:translate-y-px disabled:pointer-events-none disabled:cursor-default disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:cursor-default aria-disabled:opacity-55";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:

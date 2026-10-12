@@ -1,13 +1,10 @@
 import { Link } from "react-router";
 
 import { paths } from "@/config/paths";
+import { MISSING_CONTACT_LABEL } from "@/features/leads/constants";
 import type { Lead } from "@/types/api";
 import { formatDateTime } from "@/utils/format";
-import {
-  getInitials,
-  getInquiryExcerpt,
-  getLeadStatusLabel,
-} from "@/utils/lead";
+import { getInitials, getInquiryExcerpt } from "@/utils/lead";
 
 type CustomerCellProps = {
   lead: Lead;
@@ -35,12 +32,8 @@ export const ContactCell = ({ lead }: { lead: Lead }) => {
     );
   }
 
-  return lead.email ?? lead.phone ?? "Not provided";
+  return lead.email ?? lead.phone ?? MISSING_CONTACT_LABEL;
 };
-
-export const StatusCell = ({ status }: { status: Lead["status"] }) => (
-  <span className="status">{getLeadStatusLabel(status)}</span>
-);
 
 export const InquiryCell = ({ message }: { message: Lead["message"] }) => (
   <span className="inquiry-excerpt">{getInquiryExcerpt(message)}</span>

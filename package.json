@@ -47,11 +47,5 @@
     "workerDirectory": [
       "public"
     ]
-  },
-  "intent": {
-    "skills": [
-      "@tanstack/react-table#getting-started",
-      "@tanstack/react-table#table-state"
-    ]
   }
 }

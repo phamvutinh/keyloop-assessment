@@ -6,21 +6,23 @@ import {
 
 import { api } from "@/lib/api-client";
 import type { QueryConfig } from "@/lib/react-query";
-import type { LeadListResponse, LeadStatus } from "@/types/api";
+import type { LeadListResponse } from "@/types/api";
 
 export type GetLeadsParams = {
   page: number;
   pageSize: number;
-  status?: LeadStatus;
+  search?: string;
 };
 
 export const getLeads = async ({
   page,
   pageSize,
-  status,
+  search,
 }: GetLeadsParams): Promise<LeadListResponse> => {
+  const normalizedSearch = search?.trim();
+
   return api.get<LeadListResponse>("/leads", {
-    params: { page, pageSize, status },
+    params: { page, pageSize, search: normalizedSearch || undefined },
   });
 };
 
