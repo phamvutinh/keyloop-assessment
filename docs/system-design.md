@@ -126,5 +126,3 @@ Important corrections came from review rather than accepting generated output as
 AI also helped compare the assessment PDF with the source code and turn the current implementation into this system design. That review clarified the architecture, data flow, API contract, trade-offs, and known limits. It was an iterative documentation and design check, not a claim that every design choice was made before coding.
 
 Verification used automated checks during development, including tests, linting, formatting checks, and builds. Browser-only checks such as real reload persistence, keyboard flow, and responsive layout were reviewed manually during development.
-
-Part 1 coverage: diagram/roles (§2), data flow (§4), technologies/justifications (§5), observability (§7), GenAI (§8), assumptions (§1), and future readiness (§6). Working code/README/tests and the 5-10 minute video remain separate deliverables.
